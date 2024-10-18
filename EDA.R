@@ -5,18 +5,15 @@ library(sp)
 library(ggplot2)
 library(rnaturalearth)
 library(RColorBrewer)
-
-snow_dat <- read.csv(here::here("snow_dat.csv"))[,-1]
-snow_matrix <- as.matrix(snow_dat[,-(1:2)])
-snow_dat <- snow_dat[-which(rowSums(snow_matrix)==0),]
-
+idx <- which(readRDS("github_DF")$Group=="4")
+snow_dat <- read.csv(here::here("snow_dat.csv"))[idx,-1]
 snow_matrix <- as.matrix(snow_dat[,-(1:2)])
 snow_long <- snow_dat$LON
 snow_lat <- snow_dat$LAT
 
 
 world <- ne_countries(scale = "medium", returnclass = "sf")
-world_north <- world[st_coordinates(st_centroid(world))[, 2] > -1000, ]
+world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
 
 
 # Convert the data frame to an sf object
@@ -52,22 +49,5 @@ ggplot() +
        color = "Snow Existence") +
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 
-# Plot for multiple time steps
-# for (col_name in names(sf_data_aeqd)) {
-#   column_data <- sf_data_aeqd[[col_name]]
-# 
-#   # Create the plot
-#   p <- ggplot() +
-#     geom_sf(data = world_aeqd, fill = "lightgray", color = "NA") +  # World map
-#     geom_sf(data = sf_data_aeqd, aes(color = factor(column_data)), size = 1) +  # Data points with color mapped
-#     scale_color_manual(values = c("0" = "orange", "1" = "lightblue"),  # Custom color mapping
-#                        labels = c("No Snow" = "0", "Snow" = "1"),
-#                        name = "Snow Prevalence") +
-#     geom_sf(data = world_aeqd, fill = "NA", color = "black") +  # World map
-#     theme_minimal() +
-#     labs(title = paste("World Map from the North Pole: ", col_name),
-#          color = "Snow Existence") +
-#     theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-# }
 
 
