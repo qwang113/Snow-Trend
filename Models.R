@@ -103,14 +103,22 @@ parameters {
     vector[S] theta_a2s;
     
   // Hyperparameter for hierarchical prior
-    real<lower=0> tau_0;
-    real<lower=0> tau_0s;
-    real<lower=0> tau_1;
-    real<lower=0> tau_1s;
-    real<lower=0> tau_2;
-    real<lower=0> tau_2s;
-    real<lower=0> tau_a;
-    real<lower=0> tau_as;
+    real<lower=0> tau_01;
+    real<lower=0> tau_02;
+    real<lower=0> tau_01s;
+    real<lower=0> tau_02s;
+    real<lower=0> tau_11;
+    real<lower=0> tau_12;
+    real<lower=0> tau_11s;
+    real<lower=0> tau_12s;
+    real<lower=0> tau_21;
+    real<lower=0> tau_22;
+    real<lower=0> tau_21s;
+    real<lower=0> tau_22s;
+    real<lower=0> tau_a1;
+    real<lower=0> tau_a2;
+    real<lower=0> tau_a1s;
+    real<lower=0> tau_a2s;
     
 }
 
@@ -131,35 +139,47 @@ transformed parameters {
 model {
     
     // Define BYM normal priors
-    theta_01 ~ multi_normal_prec( rep_vector(0,S), 1/tau_0 * scale(D-Omg));
-    theta_02 ~ multi_normal_prec( rep_vector(0,S), 1/tau_0 * diag_matrix(rep_vector(1, S)));
-    theta_01s ~ multi_normal_prec( rep_vector(0,S), 1/tau_0s * scale(D-Omg));
-    theta_02s ~ multi_normal_prec( rep_vector(0,S), 1/tau_0s * diag_matrix(rep_vector(1, S)));  
+    theta_01 ~ multi_normal_prec( rep_vector(0,S), 1/tau_01 * scale(D-Omg));
+    theta_02 ~ multi_normal_prec( rep_vector(0,S), 1/tau_02 * diag_matrix(rep_vector(1, S)));
+    theta_01s ~ multi_normal_prec( rep_vector(0,S), 1/tau_01s * scale(D-Omg));
+    theta_02s ~ multi_normal_prec( rep_vector(0,S), 1/tau_02s * diag_matrix(rep_vector(1, S)));  
     
-    theta_11 ~ multi_normal_prec( rep_vector(0,S), 1/tau_1 * scale(D-Omg));
-    theta_12 ~ multi_normal_prec( rep_vector(0,S), 1/tau_1 * diag_matrix(rep_vector(1, S)));
-    theta_11s ~ multi_normal_prec( rep_vector(0,S), 1/tau_1s * scale(D-Omg));
-    theta_12s ~ multi_normal_prec( rep_vector(0,S), 1/tau_1s * diag_matrix(rep_vector(1, S))); 
+    theta_11 ~ multi_normal_prec( rep_vector(0,S), 1/tau_11 * scale(D-Omg));
+    theta_12 ~ multi_normal_prec( rep_vector(0,S), 1/tau_12 * diag_matrix(rep_vector(1, S)));
+    theta_11s ~ multi_normal_prec( rep_vector(0,S), 1/tau_11s * scale(D-Omg));
+    theta_12s ~ multi_normal_prec( rep_vector(0,S), 1/tau_12s * diag_matrix(rep_vector(1, S))); 
     
-    theta_21 ~ multi_normal_prec( rep_vector(0,S), 1/tau_2 * scale(D-Omg));
-    theta_22 ~ multi_normal_prec( rep_vector(0,S), 1/tau_2 * diag_matrix(rep_vector(1, S)));
-    theta_21s ~ multi_normal_prec( rep_vector(0,S), 1/tau_2s * scale(D-Omg));
-    theta_22s ~ multi_normal_prec( rep_vector(0,S), 1/tau_2s * diag_matrix(rep_vector(1, S))); 
+    theta_21 ~ multi_normal_prec( rep_vector(0,S), 1/tau_21 * scale(D-Omg));
+    theta_22 ~ multi_normal_prec( rep_vector(0,S), 1/tau_22 * diag_matrix(rep_vector(1, S)));
+    theta_21s ~ multi_normal_prec( rep_vector(0,S), 1/tau_21s * scale(D-Omg));
+    theta_22s ~ multi_normal_prec( rep_vector(0,S), 1/tau_22s * diag_matrix(rep_vector(1, S))); 
     
-    theta_a1 ~ multi_normal_prec( rep_vector(0,S), 1/tau_a * scale(D-Omg));
-    theta_a2 ~ multi_normal_prec( rep_vector(0,S), 1/tau_a * diag_matrix(rep_vector(1, S)));
-    theta_a1s ~ multi_normal_prec( rep_vector(0,S), 1/tau_as * scale(D-Omg) );
-    theta_a2s ~ multi_normal_prec( rep_vector(0,S), 1/tau_as * diag_matrix(rep_vector(1, S))); 
+    theta_a1 ~ multi_normal_prec( rep_vector(0,S), 1/tau_a1 * scale(D-Omg));
+    theta_a2 ~ multi_normal_prec( rep_vector(0,S), 1/tau_a2 * diag_matrix(rep_vector(1, S)));
+    theta_a1s ~ multi_normal_prec( rep_vector(0,S), 1/tau_a1s * scale(D-Omg) );
+    theta_a2s ~ multi_normal_prec( rep_vector(0,S), 1/tau_a2s * diag_matrix(rep_vector(1, S))); 
     
     // Define tau hierarchical priors
-    tau_0 ~ cauchy(0,sigma);
-    tau_0s ~ cauchy(0,sigma);
-    tau_1 ~ cauchy(0,sigma);
-    tau_1s ~ cauchy(0,sigma);
-    tau_2 ~ cauchy(0,sigma);
-    tau_2s ~ cauchy(0,sigma);
-    tau_0 ~ cauchy(0,sigma);
-    tau_0s ~ cauchy(0,sigma);
+    tau_01 ~ cauchy(0,sigma);
+    tau_01s ~ cauchy(0,sigma);
+    tau_11 ~ cauchy(0,sigma);
+    tau_11s ~ cauchy(0,sigma);
+    tau_21 ~ cauchy(0,sigma);
+    tau_21s ~ cauchy(0,sigma);
+    tau_01 ~ cauchy(0,sigma);
+    tau_01s ~ cauchy(0,sigma);
+    tau_02 ~ cauchy(0,sigma);
+    tau_02s ~ cauchy(0,sigma);
+    tau_12 ~ cauchy(0,sigma);
+    tau_12s ~ cauchy(0,sigma);
+    tau_22 ~ cauchy(0,sigma);
+    tau_22s ~ cauchy(0,sigma);
+    tau_02 ~ cauchy(0,sigma);
+    tau_02s ~ cauchy(0,sigma);
+    tau_a1 ~ cauchy(0,sigma);
+    tau_a2 ~ cauchy(0,sigma);
+    tau_a1s ~ cauchy(0,sigma);
+    tau_a2s ~ cauchy(0,sigma);
     
     
     // Target function
