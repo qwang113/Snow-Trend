@@ -58,24 +58,24 @@
   tau_a2s = 1e-7
   
   
-  theta_01 <- rmvnorm(1, rep(0, nrow(coords)), sigma = solve(BYM_mat)*tau_01)
+  theta_01 <- rmvnorm(1, rep(2, nrow(coords)), sigma = solve(BYM_mat)*tau_01)
   theta_01s <- rmvnorm(1, rep(0, nrow(coords)), sigma = solve(BYM_mat)*tau_01s)
   
   theta_02 <- rmvnorm(1, rep(0, nrow(coords)), sigma = diag(nrow(coords))*tau_02)
   theta_02s <- rmvnorm(1, rep(0, nrow(coords)), sigma = diag(nrow(coords))*tau_02s)
   # // Define BYM model parameters for cosine
-  theta_11 <- rmvnorm(1, rep(2, nrow(coords)), sigma = solve(BYM_mat)*tau_11)
-  theta_11s <- rmvnorm(1, rep(-2, nrow(coords)), sigma = solve(BYM_mat)*tau_11s)
+  theta_11 <- rmvnorm(1, rep(4, nrow(coords)), sigma = solve(BYM_mat)*tau_11)
+  theta_11s <- rmvnorm(1, rep(-4, nrow(coords)), sigma = solve(BYM_mat)*tau_11s)
   
-  theta_12 <- rmvnorm(1, rep(0, nrow(coords)), sigma = diag(nrow(coords))*tau_12)
-  theta_12s <- rmvnorm(1, rep(0, nrow(coords)), sigma = diag(nrow(coords))*tau_12s)
+  theta_12 <- rmvnorm(1, rep(0.5, nrow(coords)), sigma = diag(nrow(coords))*tau_12)
+  theta_12s <- rmvnorm(1, rep(0.5, nrow(coords)), sigma = diag(nrow(coords))*tau_12s)
   
   # // Define BYM model parameters for sine
-  theta_21 <- rmvnorm(1, rep(5, nrow(coords)), sigma = solve(BYM_mat)*tau_21)
-  theta_21s <- rmvnorm(1, rep(-5, nrow(coords)), sigma = solve(BYM_mat)*tau_21s)
+  theta_21 <- rmvnorm(1, rep(3, nrow(coords)), sigma = solve(BYM_mat)*tau_21)
+  theta_21s <- rmvnorm(1, rep(-3, nrow(coords)), sigma = solve(BYM_mat)*tau_21s)
   
-  theta_22 <- rmvnorm(1, rep(0, nrow(coords)), sigma = diag(nrow(coords))*tau_22)
-  theta_22s <- rmvnorm(1, rep(0, nrow(coords)), sigma = diag(nrow(coords))*tau_22s)
+  theta_22 <- rmvnorm(1, rep(0.5, nrow(coords)), sigma = diag(nrow(coords))*tau_22)
+  theta_22s <- rmvnorm(1, rep(0.5, nrow(coords)), sigma = diag(nrow(coords))*tau_22s)
   
   # // Fixed time trend coefficient
   theta_a1 <- rmvnorm(1, rep(0.01, nrow(coords)), sigma = solve(BYM_mat)*tau_a1)
@@ -116,7 +116,14 @@
   plot(y[4,], type = 'l')
   
 saveRDS(cbind(long,lat,y), file = "sim_y.Rda")
-
+saveRDS(beta_0, file = "beta_0.Rda")
+saveRDS(beta_0s, file = "beta_0s.Rda")
+saveRDS(beta_1, file = "beta_1.Rda")
+saveRDS(beta_1s, file = "beta_1s.Rda")
+saveRDS(beta_2, file = "beta_2.Rda")
+saveRDS(beta_2s, file = "beta_2s.Rda")
+saveRDS(alpha_0, file = "alpha_0.Rda")
+saveRDS(alpha_0s, file = "alpha_0s.Rda")
   
   # # Test whether theta is spatially correlated
   # test_thetas <- data.frame("long" = coords[,1], "lat" = coords[,2], "value" = as.vector(alpha_0))
