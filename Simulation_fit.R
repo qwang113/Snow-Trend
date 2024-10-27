@@ -190,13 +190,11 @@ data_list <- list(TT = dim(y)[2], S = dim(y)[1], y = y, D = D, Omg = Omg, sigma 
 
 fit <- stan(model_code = stan_code, 
             data = data_list,
-            chains = 1,             # Number of chains
+            chains = 6,             # Number of chains
             iter = 3000,            # Total iterations per chain
             warmup = 1000,          # Number of warmup iterations
             thin = 2,               # Thinning interval
             cores = 6,
             init = "0")             # Number of cores to use
-beta_0 <- readRDS("beta_0.Rda")
-beta_1 <- readRDS("beta_1.Rda")
 samples <- extract(fit)
 saveRDS(samples, "samples.Rda")
