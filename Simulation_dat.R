@@ -13,13 +13,20 @@
   inv_logit <- function(x){return(1/(1+exp(-x)))}
   
   eps = 0.0001
-  long <- runif(500)
-  lat <- runif(500)
-  period <- 50
+  long <- runif(100)
+  lat <- runif(100)
+  
+  period <- 20
   coords <- cbind(long, lat)
+  
+  SS <- nrow(coords)
+  time_step <- 1:200
+  TT <- length(time_step)
+  
+  
   Distances <- pairdist(coords)
   Omg <- matrix(0, nrow = nrow(coords), ncol = nrow(coords))
-  Omg[which(Distances <= 0.05)] = 1
+  Omg[which(Distances <= 0.1)] = 1
   Omg <- Omg - diag(nrow = nrow(coords))
   # D <- diag(rowSums(Omg))
   D <- diag(rowSums(Omg)) + diag(eps, nrow = length(rowSums(Omg)))
@@ -86,9 +93,7 @@
   alpha_0 <-  theta_a1 + theta_a2
   alpha_0s <-  theta_a1s + theta_a2s
   
-  SS <- nrow(coords)
-  time_step <- 1:500
-  TT <- length(time_step)
+
   
   P <- array(NA, dim = c(SS, TT-1, 2, 2))
   
@@ -110,8 +115,8 @@
   plot(y[3,], type = 'l')
   plot(y[4,], type = 'l')
   
-  
-  
+saveRDS(cbind(long,lat,y), file = "sim_y.Rda")
+
   
   # # Test whether theta is spatially correlated
   # test_thetas <- data.frame("long" = coords[,1], "lat" = coords[,2], "value" = as.vector(alpha_0))
