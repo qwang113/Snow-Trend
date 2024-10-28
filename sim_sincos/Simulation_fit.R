@@ -42,8 +42,8 @@ stan_code <- {"
     
     // Define Likelihood
     real llh(matrix y,int S, int TT, real period,
-    vector beta_0, vector beta_1, vector beta_2, vector alpha,
-    vector beta_0s, vector beta_1s, vector beta_2s, vector alpha_s) {
+    vector beta_0, vector beta_0s, vector beta_1, vector beta_1s,
+    vector beta_2, vector beta_2s, vector alpha, vector alpha_s) {
     
             real ll = 0; // Initialize log-likelihood
         
