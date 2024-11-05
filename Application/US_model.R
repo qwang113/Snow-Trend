@@ -8,20 +8,22 @@ library(spatstat)
 library(reshape2)
 library(ggplot2)
 library(rstan)
-setwd(here::here("./sim_sincos/"))
-all_y <- readRDS("sim_y.Rda")
-y <- all_y[,-c(1,2)]
+setwd(here::here())
+all_y <- readRDS("snow_cleaned.Rda")
+north_america_idx <- which(all_y$LON >= -170 & all_y$LON <= -50 & all_y$LAT >= 15 & all_y$LAT <= 85)
 
-coords <- all_y[,1:2]
+y <- all_y[north_america_idx,-c(1,2)]
+
+coords <- all_y[north_america_idx,1:2]
 Distances <- pairdist(coords)
 Omg <- matrix(0, nrow = nrow(coords), ncol = nrow(coords))
-Omg[which(Distances <= 0.1)] = 1
+Omg[which(Distances <= 2)] = 1
 Omg <- Omg - diag(nrow = nrow(coords))
 # D <- diag(rowSums(Omg))
 D <- diag(rowSums(Omg)) 
 sigma = 1
 eps = 0.0001
-period = 20
+period = 52
 
 stan_code <- {"
   functions {
@@ -190,11 +192,11 @@ data_list <- list(TT = dim(y)[2], S = dim(y)[1], y = y, D = D, Omg = Omg, sigma 
 
 fit <- stan(model_code = stan_code, 
             data = data_list,
-            chains = 6,             # Number of chains
+            chains = 4,             # Number of chains
             iter = 3000,            # Total iterations per chain
             warmup = 1000,          # Number of warmup iterations
             thin = 2,               # Thinning interval
             cores = 6,
             init = "0")             # Number of cores to use
 samples <- extract(fit)
-saveRDS(samples, "samples.Rda")
+saveRDS(samples, "NA_samples.Rda")
