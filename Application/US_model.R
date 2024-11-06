@@ -8,13 +8,41 @@ library(spatstat)
 library(reshape2)
 library(ggplot2)
 library(rstan)
+library(maps)
+library(spBayes)
+
 setwd(here::here())
 all_y <- readRDS("snow_cleaned.Rda")
-north_america_idx <- which(all_y$LON >= -170 & all_y$LON <= -50 & all_y$LAT >= 15 & all_y$LAT <= 85)
 
-y <- all_y[north_america_idx,-c(1,2)]
+states <- c("Idaho","Washington","Oregon","Montana","Wyoming")
+test_idx <- NULL
+for (i in 1:length(states)) {
+  tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),cbind(all_y$LON, all_y$LAT))
+  test_idx <- unique(c(test_idx, tem))
+  
+}
 
-coords <- all_y[north_america_idx,1:2]
+test_area <- data.frame(map_data("state", region = states))
+points_inside <- data.frame(all_y[test_idx, 1:2])
+test_period <- 500
+
+
+ggplot() +
+  # Add Idaho polygon
+  geom_polygon(data = test_area, aes(x = long, y = lat, group = group), fill = "lightblue", color = "black") +
+  # Add points that are inside Idaho
+  geom_point(data = points_inside, aes(x = LON, y = LAT), color = "red", size = 3) +
+  # Set plot title and labels
+  ggtitle("Map of Test Data with Points Inside") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  coord_fixed(ratio = 1) +
+  theme_minimal()
+
+y <- all_y[test_idx,3:(2+1000)]
+coords <- all_y[test_idx,1:2]
+
+
 Distances <- pairdist(coords)
 Omg <- matrix(0, nrow = nrow(coords), ncol = nrow(coords))
 Omg[which(Distances <= 2)] = 1
@@ -199,4 +227,4 @@ fit <- stan(model_code = stan_code,
             cores = 6,
             init = "0")             # Number of cores to use
 samples <- extract(fit)
-saveRDS(samples, "NA_samples.Rda")
+saveRDS(samples, "test_app_samples.Rda")

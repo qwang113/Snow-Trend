@@ -11,7 +11,7 @@ snow_matrix <- as.matrix(snow_dat[,-(1:2)])
 snow_long <- snow_dat$LON
 snow_lat <- snow_dat$LAT
 
-saveRDS(snow_dat,"snow_cleaned.Rda")
+# saveRDS(snow_dat,"snow_cleaned.Rda")
 world <- ne_countries(scale = "medium", returnclass = "sf")
 world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
 
