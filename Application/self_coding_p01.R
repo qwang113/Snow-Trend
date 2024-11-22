@@ -12,6 +12,8 @@ library(maps)
 library(spBayes)
 library(BayesLogit)
 library(Matrix)
+library(future.apply)
+library(pbapply)
 setwd(here::here())
 all_y <- readRDS("snow_cleaned.Rda")
 # states <- c("Idaho","Washington","Oregon","Montana","Wyoming")
@@ -20,7 +22,7 @@ all_y <- readRDS("snow_cleaned.Rda")
 # for (i in 1:length(states)) {
 #   tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),cbind(all_y$LON, all_y$LAT))
 #   test_idx <- unique(c(test_idx, tem))
-#   
+# 
 # }
 # 
 # test_area <- data.frame(map_data("state", region = states))
@@ -51,22 +53,42 @@ design_mat <- Matrix(0, nrow = length(next_y), ncol = 8*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
 
 # pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
-covariates <- 
+covariates <- Matrix(
 cbind(1,1,
       cos(2*pi*location_time_0[,2]/period),
       cos(2*pi*location_time_0[,2]/period),
       sin(2*pi*location_time_0[,2]/period), 
       sin(2*pi*location_time_0[,2]/period), 
-      location_time_0[,2], location_time_0[,2])
+      location_time_0[,2], location_time_0[,2]), sparse = TRUE )
 
 
-for (i in 1:nrow(design_mat)) {
-  print(i)
-  design_mat[i,] <- as.vector(outer( location_idx[i,],
-                                          covariates[i,], "*"))
-  # setTxtProgressBar(pb, i)
+# Loop through chunks of rows
+chunk_size <- 10
+# 2470001
+curr_row <- start_row
+for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
+  print(start_row)
+  # Define the end row for the current chunk
+  end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
+  
+  # Extract the relevant rows from location_idx and covariates
+  loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
+  cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
+  
+  # Apply the outer product to each pair of rows in the chunk
+  # mapply to compute the outer product for each pair of rows
+  result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
+                         split(loc_chunk, row(loc_chunk)),
+                         split(cov_chunk, row(cov_chunk)))
+  
+  # Reshape result to match design matrix row structure
+  result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
+  
+  # Convert result matrix to a sparse Matrix format and store in design_mat
+  design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 }
 
+saveRDS(design_mat,"design_mat_01.Rda")
 tot_samples <- 1000
 
 all_theta <- matrix(NA, nrow = 8*S, ncol = tot_samples)
@@ -106,17 +128,17 @@ while(save_idx < tot_samples) {
   curr_theta_vec <- t(L) %*% sth + pos_mu
   
  # Sample taus
-  curr_tau_vec[1] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[1:S])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[1:S]/2 )
-  curr_tau_vec[2] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[(S+1):(2*S)])%*%curr_theta_vec[(S+1):(2*S)]/2 )
+  curr_tau_vec[1] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[1:S])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[1:S]/2) )
+  curr_tau_vec[2] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(S+1):(2*S)])%*%curr_theta_vec[(S+1):(2*S)]/2 ) )
   
-  curr_tau_vec[3] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[(2*S+1):(3*S)])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[(2*S+1):(3*S)]/2 )
-  curr_tau_vec[4] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[(3*S+1):(4*S)])%*%curr_theta_vec[(3*S+1):(4*S)]/2 )
+  curr_tau_vec[3] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(2*S+1):(3*S)])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[(2*S+1):(3*S)]/2 ) )
+  curr_tau_vec[4] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(3*S+1):(4*S)])%*%curr_theta_vec[(3*S+1):(4*S)]/2 ) )
   
-  curr_tau_vec[5] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[(4*S+1):(5*S)])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[(4*S+1):(5*S)] /2)
-  curr_tau_vec[6] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[(5*S+1):(6*S)])%*%curr_theta_vec[(5*S+1):(6*S)]/2 )
+  curr_tau_vec[5] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(4*S+1):(5*S)])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[(4*S+1):(5*S)] /2) )
+  curr_tau_vec[6] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(5*S+1):(6*S)])%*%curr_theta_vec[(5*S+1):(6*S)]/2 ) )
  
-  curr_tau_vec[7] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[(6*S+1):(7*S)])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[(6*S+1):(7*S)]/2 )
-  curr_tau_vec[8] <- 1/rgamma(1, shape = a_tau+S/2, rate = b_tau + t(curr_theta_vec[(7*S+1):(8*S)])%*%curr_theta_vec[(7*S+1):(8*S)]/2 )
+  curr_tau_vec[7] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(6*S+1):(7*S)])%*%(D-Omg+diag(eps, S))%*%curr_theta_vec[(6*S+1):(7*S)]/2 ) )
+  curr_tau_vec[8] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(7*S+1):(8*S)])%*%curr_theta_vec[(7*S+1):(8*S)]/2 ) )
 
   if((curr_idx > burn) & (curr_idx %% thin == 0) ){
     save_idx <- save_idx + 1
