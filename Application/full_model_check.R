@@ -7,10 +7,13 @@ library(ggplot2)
 library(rnaturalearth)
 library(RColorBrewer)
 
-all_y <- readRDS("snow_cleaned.Rda")
+
+
+all_y <- readRDS(here::here("snow_cleaned.Rda"))
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 
+setwd("D:/77/Research/temp/snow_trend")
 theta <- readRDS("self_theta.Rda")
 all_tau <- readRDS("self_tau.Rda")
 
@@ -103,7 +106,21 @@ for (i in 1:16) {
 
 
 
-
+ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+  geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]]), size = 2, shape = 18) + # Data points with color mapped
+  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+  scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
+  theme_minimal() +
+  labs(
+    title = names(sf_data_aeqd)[i],
+    color = names(sf_data_aeqd)[i]
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  )
 
 
 
