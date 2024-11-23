@@ -47,6 +47,59 @@ theta_a1s <- theta_mean_10[(6*S+1):(7*S)]
 theta_a2s <- theta_mean_10[(7*S+1):(8*S)]
 
 
+beta_0_hat <- theta_01 + theta_02
+beta_1_hat <- theta_11 + theta_12
+beta_2_hat <- theta_21 + theta_22
+alpha_hat <- theta_a1 + theta_a2
+
+beta_0s_hat <- theta_01s + theta_02s
+beta_1s_hat <- theta_11s + theta_12s
+beta_2s_hat <- theta_21s + theta_22s
+alpha_s_hat <- theta_a1s + theta_a2s
+
+
+
+# Transaction Matrix
+
+SS <- dim(y)[1]
+TT <- dim(y)[2]
+period <- 52
+
+P <- array(NA, dim = c(SS, TT-1, 2, 2))
+inv_logit <- function(x){return(1/(1+exp(-x)))}
+for (time in 1:(TT-1)) {
+  P[, time, 1, 2] <- inv_logit(beta_0_hat + beta_1_hat * cos(2*pi*time/period) + beta_2_hat * sin(2*pi*time/period) + alpha_hat * time)
+  P[, time, 1, 1] <- 1 - P[, time, 1, 2]
+  P[, time, 2, 1] <- inv_logit(beta_0s_hat + beta_1s_hat * cos(2*pi*time/period) + beta_2s_hat * sin(2*pi*time/period)+ alpha_s_hat * time)
+  P[, time, 2, 2] <- 1 - P[, time, 2, 1]
+}
+
+# Calculate weekly prediction
+weekly_pred <- array(NA, dim = c(dim(y),2))
+for (s in 1:SS) {
+  weekly_pred[s,1,] = c(y[s,1] == 0, y[s,1] == 1)
+}
+
+for (s in 1:SS) {
+  for(t in 1:(TT-1)){
+    weekly_pred[s,t+1,] <- t(weekly_pred[s,t,])%*%P[s,t,,]
+  }
+}
+
+# Select a week and calculate the trend
+# Select the second dim on the third dim of array to get P(x_t = 1), i.e., E(x_t)
+nu = 1
+week_idx <- seq(from = nu, to = TT, by = 52)
+yearly_pred = yearly_trend <- weekly_pred[,week_idx,2]
+for (yrs in 2:ncol(yearly_pred)) {
+  yearly_trend[,yrs] = yearly_pred[,yrs] - yearly_pred[,1]
+}
+last_year <- yearly_trend[,ncol(yearly_trend)]
+
+diffs <- last_year - yearly_pred[,1]
+diffs[which(diffs <= -0.1)]
+
+
 # saveRDS(snow_dat,"snow_cleaned.Rda")
 world <- ne_countries(scale = "medium", returnclass = "sf")
 world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
