@@ -88,16 +88,19 @@ for (s in 1:SS) {
 
 # Select a week and calculate the trend
 # Select the second dim on the third dim of array to get P(x_t = 1), i.e., E(x_t)
-nu = 1
-week_idx <- seq(from = nu, to = TT, by = 52)
-yearly_pred = yearly_trend <- weekly_pred[,week_idx,2]
-for (yrs in 2:ncol(yearly_pred)) {
-  yearly_trend[,yrs] = yearly_pred[,yrs] - yearly_pred[,1]
+diffs <- matrix(NA, nrow = SS, ncol = 52)
+for (nu in 1:52) {
+  week_idx <- seq(from = nu, to = TT, by = 52)
+  yearly_pred = yearly_trend <- weekly_pred[,week_idx,2]
+  for (yrs in 2:ncol(yearly_pred)) {
+    yearly_trend[,yrs] = yearly_pred[,yrs] - yearly_pred[,1]
+  }
+  diffs[,nu] <- yearly_trend[,ncol(yearly_trend)]
 }
-last_year <- yearly_trend[,ncol(yearly_trend)]
+colnames(diffs) <- paste0("week", 1:52)
 
-diffs <- last_year - yearly_pred[,1]
-diffs[which(diffs <= -0.1)]
+
+
 
 
 # saveRDS(snow_dat,"snow_cleaned.Rda")
@@ -108,7 +111,7 @@ world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
 
 # Convert the data frame to an sf object
 sf_data <- st_as_sf(data.frame(cbind(coords, theta_01, theta_02, theta_11, theta_12, theta_21, theta_22, theta_a1, theta_a2,
-                                     theta_01s, theta_02s, theta_11s, theta_12s, theta_21s, theta_22s, theta_a1s, theta_a2s))
+                                     theta_01s, theta_02s, theta_11s, theta_12s, theta_21s, theta_22s, theta_a1s, theta_a2s, diffs))
                     , coords = c("LON", "LAT"), crs = 4326)
 
 
@@ -128,12 +131,78 @@ equator_points <- data.frame(
 equator_sf <- st_as_sf(equator_points, coords = c("lon", "lat"), crs = 4326) 
 equator_aeqd <- st_transform(equator_sf, crs = aeqd_proj)
 
+
+# Trend plot:
+# i = 19
+# ggplot() +
+#   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+#   geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]]/53), size = 2, shape = 18) + # Data points with color mapped
+#   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+#   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+#   scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
+#   theme_minimal() +
+#   labs(
+#     title = names(sf_data_aeqd)[i],
+#     color = names(sf_data_aeqd)[i]
+#   ) +
+#   theme(
+#     legend.position = "bottom",
+#     plot.title = element_text(hjust = 0.5)
+#   )
+
+
+# Directory to store the individual frames
+dir.create("gif_frames")
+color_limits <- range(diffs) / 53
+# Loop to generate plots and save as PNG
+for (i in 1:52 + 16) {
+  # Create the plot
+  plot <- ggplot() +
+    geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]] / 53), size = 2, shape = 18) + # Data points
+    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map borders
+    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+    scale_color_gradient2(
+      low = "blue",         # Negative values
+      high = "red",         # Positive values
+      midpoint = 0,         # Center at 0
+      limits = color_limits, # Use consistent limits for color scale
+      guide = guide_colorbar(barwidth = 20, barheight = 0.5) # Adjust legend bar size
+    ) +
+    theme_minimal() +
+    labs(
+      title = names(sf_data_aeqd)[i],
+      color = names(sf_data_aeqd)[i]
+    ) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(hjust = 0.5)
+    )
+  
+  # Save the plot as a PNG file
+  ggsave(filename = sprintf("gif_frames/frame_%02d.png", i), plot = plot, width = 8, height = 6, dpi = 300)
+}
+
+
+# Combine PNGs into a GIF using magick
+frames <- image_read(sprintf("gif_frames/frame_%02d.png", 1:52+16))
+gif <- image_animate(frames, fps = 2)  # Adjust fps for speed of animation
+
+# Save the GIF
+image_write(gif, path = "animated_map.gif")
+
+# Cleanup: Remove temporary files (optional)
+unlink("gif_frames", recursive = TRUE)
+
+
+
+
+
 # Plot for a single time
 for (i in 1:16) {
   # Create the plot
   plot <- ggplot() +
     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]]), size = 2, shape = 18) + # Data points with color mapped
+    geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]] ), size = 2, shape = 18) + # Data points with color mapped
     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
     scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
@@ -160,16 +229,16 @@ for (i in 1:16) {
 
 
 ggplot() +
-  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-  geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]]), size = 2, shape = 18) + # Data points with color mapped
-  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+  geom_sf(data = sf_data_aeqd, aes(color = apply(diffs, 1 ,mean) ), size = 2, shape = 18) + # Data points
+  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map borders
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
-  theme_minimal() +
-  labs(
-    title = names(sf_data_aeqd)[i],
-    color = names(sf_data_aeqd)[i]
+  scale_color_gradient2(
+    low = "red",         # Negative values
+    high = "blue",         # Positive values
+    midpoint = 0,         # Center at 0
+    guide = guide_colorbar(barwidth = 20, barheight = 0.5) # Adjust legend bar size
   ) +
+  theme_minimal() + 
   theme(
     legend.position = "bottom",
     plot.title = element_text(hjust = 0.5)
