@@ -101,9 +101,6 @@ colnames(diffs) <- paste0("week", 1:52)
 
 
 
-
-
-# saveRDS(snow_dat,"snow_cleaned.Rda")
 world <- ne_countries(scale = "medium", returnclass = "sf")
 world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
 
@@ -111,7 +108,7 @@ world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
 
 # Convert the data frame to an sf object
 sf_data <- st_as_sf(data.frame(cbind(coords, theta_01, theta_02, theta_11, theta_12, theta_21, theta_22, theta_a1, theta_a2,
-                                     theta_01s, theta_02s, theta_11s, theta_12s, theta_21s, theta_22s, theta_a1s, theta_a2s, diffs))
+                                     theta_01s, theta_02s, theta_11s, theta_12s, theta_21s, theta_22s, theta_a1s, theta_a2s, diffs)[-c(1109,685),])
                     , coords = c("LON", "LAT"), crs = 4326)
 
 
@@ -245,6 +242,27 @@ ggplot() +
   )
 
 
+i= 4
+ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+  geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]] ), size = 2, shape = 18) + # Data points with color mapped
+  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+  scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
+  theme_minimal() +
+  labs(
+    title = names(sf_data_aeqd)[i],
+    color = names(sf_data_aeqd)[i]
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  )
+
+
+
+
+# Bad locations: 1109, 685
 
 
 
