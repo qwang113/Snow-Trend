@@ -16,8 +16,8 @@ library(future.apply)
 library(pbapply)
 library(sparseMVN)
 setwd(here::here())
-all_y <- readRDS("snow_cleaned.Rda")
-
+no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
+all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 
