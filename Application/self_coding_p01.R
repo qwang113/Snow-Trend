@@ -7,7 +7,6 @@ library(fields)
 library(spatstat)
 library(reshape2)
 library(ggplot2)
-library(rstan)
 library(maps)
 library(spBayes)
 library(BayesLogit)
@@ -108,8 +107,8 @@ curr_idx <- 0
 save_idx <- 0
 burn = 0
 thin = 1
- 
-cov_inv <- solve(D - Omg + diag(eps, S))
+cov_inv <- solve(D - Omg)
+
 while(save_idx < tot_samples) {
     curr_idx = curr_idx + 1
     print(curr_idx)
