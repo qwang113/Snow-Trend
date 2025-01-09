@@ -14,7 +14,7 @@ library(BayesLogit)
 library(Matrix)
 library(future.apply)
 library(pbapply)
-library(sparseMVN)
+library(sparseMVN) 
 setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
 all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
@@ -51,7 +51,7 @@ Omg <- Omg - diag(nrow = nrow(coords))
 # D <- diag(rowSums(Omg))
 D <- Matrix(diag(rowSums(Omg)) ,sparse = TRUE)
 sigma = 1
-# eps = 0.0001
+eps = 1e-7
 period = 52
 
 location_time_0 <- which(y[,-ncol(y)]==0, arr.ind =  TRUE)
@@ -68,28 +68,27 @@ cbind(1,1,
       sin(2*pi*location_time_0[,2]/period), 
       location_time_0[,2], location_time_0[,2]), sparse = TRUE )
 
-# Loop through chunks of rows
+# # Loop through chunks of rows
 # chunk_size <- 10
-# # 2470001
-# curr_row <- start_row
+# curr_row <- 1
 # for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
 #   print(start_row)
 #   # Define the end row for the current chunk
 #   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-#   
+# 
 #   # Extract the relevant rows from location_idx and covariates
 #   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
 #   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-#   
+# 
 #   # Apply the outer product to each pair of rows in the chunk
 #   # mapply to compute the outer product for each pair of rows
 #   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
 #                          split(loc_chunk, row(loc_chunk)),
 #                          split(cov_chunk, row(cov_chunk)))
-#   
+# 
 #   # Reshape result to match design matrix row structure
 #   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-#   
+# 
 #   # Convert result matrix to a sparse Matrix format and store in design_mat
 #   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 # }
