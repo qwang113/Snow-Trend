@@ -15,22 +15,8 @@ library(Matrix)
 library(future.apply)
 library(pbapply)
 setwd(here::here())
-all_y <- readRDS("snow_cleaned.Rda")
-# states <- c("Idaho","Washington","Oregon","Montana","Wyoming")
-# test_idx <- NULL
-# library(mvtnorm)
-# for (i in 1:length(states)) {
-#   tem = spBayes::pointsInPoly(as.matrix(map_data("state", region = states[i])[,1:2]),cbind(all_y$LON, all_y$LAT))
-#   test_idx <- unique(c(test_idx, tem))
-# 
-# }
-# 
-# test_area <- data.frame(map_data("state", region = states))
-# points_inside <- data.frame(all_y[test_idx, 1:2])
-# test_period = 1000
-# y <- all_y[test_idx,3:(2+test_period)]
-# coords <- all_y[test_idx,1:2]
-
+no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
+all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 
@@ -46,13 +32,13 @@ theta <- atan2(dif[2], dif[1])
 
 rotate_points <- function(coords, angle) {
   # Create a rotation matrix for 2D rotation
-  rotation_matrix <- matrix(c(cos(angle), -sin(angle), 
-                              sin(angle), cos(angle)), 
+  rotation_matrix <- matrix(c(cos(angle), -sin(angle),
+                              sin(angle), cos(angle)),
                             ncol = 2)
-  
+
   # Apply the rotation to the coordinates
   rotated_coords <- t(rotation_matrix %*% t(coords))
-  
+
   return(rotated_coords)
 }
 
@@ -65,7 +51,6 @@ Omg <- Omg - diag(nrow = nrow(coords))
 # D <- diag(rowSums(Omg))
 D <- Matrix(diag(rowSums(Omg)) ,sparse = TRUE)
 sigma = 0.1
-# eps = 0.0001
 period = 52
 
 
@@ -73,17 +58,17 @@ location_time_0 <- which(y[,-ncol(y)]==1, arr.ind =  TRUE)
 next_y <- abs(y[cbind(location_time_0[,1], location_time_0[,2]+1)] - 1)
 design_mat <- Matrix(0, nrow = length(next_y), ncol = 8*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
-
-# pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
-covariates <- Matrix(
-  cbind(1,1,
-        cos(2*pi*location_time_0[,2]/period),
-        cos(2*pi*location_time_0[,2]/period),
-        sin(2*pi*location_time_0[,2]/period), 
-        sin(2*pi*location_time_0[,2]/period), 
-        location_time_0[,2], location_time_0[,2]), sparse = TRUE )
-
-
+# 
+# # pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
+# covariates <- Matrix(
+#   cbind(1,1,
+#         cos(2*pi*location_time_0[,2]/period),
+#         cos(2*pi*location_time_0[,2]/period),
+#         sin(2*pi*location_time_0[,2]/period), 
+#         sin(2*pi*location_time_0[,2]/period), 
+#         location_time_0[,2], location_time_0[,2]), sparse = TRUE )
+# 
+# 
 # # # Loop through chunks of rows
 # chunk_size <- 10
 # # # 2470001
@@ -112,7 +97,7 @@ covariates <- Matrix(
 # 
 # saveRDS(design_mat,"design_mat_10.Rda")
 design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_10.Rda")
-tot_samples <- 5000
+tot_samples <- 10000
 
 all_theta <- matrix(NA, nrow = 8*S, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
@@ -137,14 +122,14 @@ while(save_idx < tot_samples) {
   
   # Sample current theta
   curr_prec <- bdiag(
-    curr_tau_vec[1]/1*prec,
-    curr_tau_vec[2]/1*diag(1,S),
-    curr_tau_vec[3]/1*prec,
-    curr_tau_vec[4]/1*diag(1,S),
-    curr_tau_vec[5]/1*prec,
-    curr_tau_vec[6]/1*diag(1,S),
-    curr_tau_vec[7]/1*prec,
-    curr_tau_vec[8]/1*diag(1,S)
+    1/curr_tau_vec[1]*prec,
+    1/curr_tau_vec[2]*diag(1,S),
+    1/curr_tau_vec[3]*prec,
+    1/curr_tau_vec[4]*diag(1,S),
+    1/curr_tau_vec[5]*prec,
+    1/curr_tau_vec[6]*diag(1,S),
+    1/curr_tau_vec[7]*prec,
+    1/curr_tau_vec[8]*diag(1,S)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -172,6 +157,7 @@ while(save_idx < tot_samples) {
     save_idx <- save_idx + 1
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
     all_tau[,save_idx] <-  as.vector(curr_tau_vec)
+    print(round(curr_tau_vec,5))
   }
   
 }

@@ -93,7 +93,7 @@ cbind(1,1,
 # 
 # saveRDS(design_mat,"design_mat_01.Rda")
 design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01.Rda")
-tot_samples <- 5000
+tot_samples <- 10000
 
 all_theta <- matrix(NA, nrow = 8*S, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
@@ -116,14 +116,14 @@ while(save_idx < tot_samples) {
     curr_omega <-  rpg(length(next_y), h = 1, z = as.numeric(curr_phi))
     # Sample current theta
     curr_prec <- bdiag(
-      curr_tau_vec[1]/1*prec,
-      curr_tau_vec[2]/1*diag(1,S),
-      curr_tau_vec[3]/1*prec,
-      curr_tau_vec[4]/1*diag(1,S),
-      curr_tau_vec[5]/1*prec,
-      curr_tau_vec[6]/1*diag(1,S),
-      curr_tau_vec[7]/1*prec,
-      curr_tau_vec[8]/1*diag(1,S)
+      1/curr_tau_vec[1]*prec,
+      1/curr_tau_vec[2]*diag(1,S),
+      1/curr_tau_vec[3]*prec,
+      1/curr_tau_vec[4]*diag(1,S),
+      1/curr_tau_vec[5]*prec,
+      1/curr_tau_vec[6]*diag(1,S),
+      1/curr_tau_vec[7]*prec,
+      1/curr_tau_vec[8]*diag(1,S)
     )                  
     xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
     pos_prec <- xtxomg + curr_prec
@@ -133,32 +133,6 @@ while(save_idx < tot_samples) {
     pos_mu <- solve(CH, b)
     # pos_mu_2 <- solve(pos_prec, b)
     curr_theta_vec <- rmvn.sparse(1, mu = pos_mu, CH = CH, prec = TRUE)
-    
-    # curr_theta_vec[1:S] <- polya_aug_sampling(design_mat[1:S,1:S], xtxomg[1:S,1:S], B_inv[1:S,1:S], kappas[1:S])
-    # 
-    # curr_theta_vec[(S+1):(2*S)] <- polya_aug_sampling(design_mat[(S+1):(2*S),(S+1):(2*S)], xtxomg[(S+1):(2*S),(S+1):(2*S)],
-    #                                                   B_inv[(S+1):(2*S),(S+1):(2*S)], kappas[(S+1):(2*S)])
-    # 
-    # curr_theta_vec[(2*S+1):(3*S)] <- polya_aug_sampling(design_mat[(2*S+1):(3*S),(2*S+1):(3*S)], xtxomg[(2*S+1):(3*S),(2*S+1):(3*S)],
-    #                                                   B_inv[(2*S+1):(3*S),(2*S+1):(3*S)], kappas[(2*S+1):(3*S)])
-    # 
-    # curr_theta_vec[(3*S+1):(4*S)] <- polya_aug_sampling(design_mat[(3*S+1):(4*S),(3*S+1):(4*S)], xtxomg[(3*S+1):(4*S),(3*S+1):(4*S)],
-    #                                                     B_inv[(3*S+1):(4*S),(3*S+1):(4*S)], kappas[(3*S+1):(4*S)])
-    # 
-    # curr_theta_vec[(4*S+1):(5*S)] <- polya_aug_sampling(design_mat[(4*S+1):(5*S),(4*S+1):(5*S)], xtxomg[(4*S+1):(5*S),(4*S+1):(5*S)],
-    #                                                     B_inv[(4*S+1):(5*S),(4*S+1):(5*S)], kappas[(4*S+1):(5*S)])
-    # 
-    # curr_theta_vec[(5*S+1):(6*S)] <- polya_aug_sampling(design_mat[(5*S+1):(6*S),(5*S+1):(6*S)], xtxomg[(5*S+1):(6*S),(5*S+1):(6*S)],
-    #                                                     B_inv[(5*S+1):(6*S),(5*S+1):(6*S)], kappas[(5*S+1):(6*S)])
-    # 
-    # curr_theta_vec[(6*S+1):(7*S)] <- polya_aug_sampling(design_mat[(6*S+1):(7*S),(6*S+1):(7*S)], xtxomg[(6*S+1):(7*S),(6*S+1):(7*S)],
-    #                                                     B_inv[(6*S+1):(7*S),(6*S+1):(7*S)], kappas[(6*S+1):(7*S)])
-    # 
-    # curr_theta_vec[(7*S+1):(8*S)] <- polya_aug_sampling(design_mat[(7*S+1):(8*S),(7*S+1):(8*S)], xtxomg[(7*S+1):(8*S),(7*S+1):(8*S)],
-    #                                                     B_inv[(7*S+1):(8*S),(7*S+1):(8*S)], kappas[(7*S+1):(8*S)])
-    
-    
-    
     
     # Sample taus
     curr_tau_vec[1] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[1:S])%*%prec%*%curr_theta_vec[1:S]/2) )
