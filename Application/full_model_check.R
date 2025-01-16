@@ -99,21 +99,9 @@ for (week_idx in 1:length(winter_weeks)) {
 
 
 
-# Select a week and calculate the trend
-# Select the second dim on the third dim of array to get P(x_t = 1), i.e., E(x_t)
-
-diffs <- matrix(NA, nrow = SS, ncol = length(winter_weeks))
-for (nu in 1:52) {
-  week_idx <- seq(from = nu, to = TT, by = 52)
-  yearly_pred = yearly_trend <- weekly_pred[,week_idx,2]
-  for (yrs in 2:ncol(yearly_pred)) {
-    yearly_trend[,yrs] = yearly_pred[,yrs] - yearly_pred[,1]
-  }
-  diffs[,nu] <- yearly_trend[,ncol(yearly_trend)]
-}
-colnames(diffs) <- paste0("week", 1:52)
 
 
+# Plots
 world <- ne_countries(scale = "medium", returnclass = "sf")
 world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
 
