@@ -60,3 +60,5 @@ ggplot() +
       barheight = 0.5  # Adjust the height of the color bar
     )
   )
+
+write.csv(curr_elev, "curr_elev.csv")
