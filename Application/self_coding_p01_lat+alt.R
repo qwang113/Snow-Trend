@@ -99,12 +99,28 @@ covariates <- Matrix(
 # 
 # saveRDS(design_mat,"design_mat_01.Rda")
 design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01.Rda")
-tot_samples <- 10000
+lats_design <- lats[row_idx]
+elev_design <- elev[row_idx,3]
 
-all_theta <- matrix(NA, nrow = 8*S, ncol = tot_samples)
+other_covariates <- Matrix(
+  cbind(lats_design, 
+        lats_design*cos(2*pi*location_time_0[,2]/period),
+        lats_design*sin(2*pi*location_time_0[,2]/period),
+        lats_design*location_time_0[,2],
+        elev_design,
+        lats_design*cos(2*pi*location_time_0[,2]/period),
+        lats_design*sin(2*pi*location_time_0[,2]/period),
+        lats_design*location_time_0[,2]), sparse = TRUE )
+
+design_mat <- cbind(design_mat, other_covariates)
+
+# Prior for the variance for latitude and altitude are set to be iid N(0,3).
+tot_samples <- 1000
+
+all_theta <- matrix(NA, nrow = 8*S + 8, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
-curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S)
-curr_tau_vec <- rep(0.1,8)
+curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S + 8)
+curr_tau_vec <- rep(1,8)
 a_tau <- 0.001
 b_tau <- 0.001
 curr_idx <- 0
@@ -129,7 +145,8 @@ while(save_idx < tot_samples) {
     1/curr_tau_vec[5]*prec,
     1/curr_tau_vec[6]*diag(1,S),
     1/curr_tau_vec[7]*prec,
-    1/curr_tau_vec[8]*diag(1,S)
+    1/curr_tau_vec[8]*diag(1,S),
+    1/1*diag(1,8)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -169,8 +186,8 @@ theta_22 <- theta_mean[(5*S+1):(6*S)]
 theta_a1 <- theta_mean[(6*S+1):(7*S)]
 theta_a2 <- theta_mean[(7*S+1):(8*S)]
 
-saveRDS(all_theta, "self_theta.Rda")
-saveRDS(all_tau, "self_tau.Rda")
+saveRDS(all_theta, "self_theta_lat+alt.Rda")
+saveRDS(all_tau, "self_tau_long_lat+alt.Rda")
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))
 # theta_01_stan <- apply(samples$theta_01, 2, mean)
