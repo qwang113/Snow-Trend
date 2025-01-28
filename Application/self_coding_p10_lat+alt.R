@@ -7,13 +7,13 @@ library(fields)
 library(spatstat)
 library(reshape2)
 library(ggplot2)
+library(rstan)
 library(maps)
 library(spBayes)
 library(BayesLogit)
 library(Matrix)
 library(future.apply)
 library(pbapply)
-library(sparseMVN) 
 setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
 all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
@@ -36,13 +36,13 @@ theta <- atan2(dif[2], dif[1])
 
 rotate_points <- function(coords, angle) {
   # Create a rotation matrix for 2D rotation
-  rotation_matrix <- matrix(c(cos(angle), -sin(angle), 
-                              sin(angle), cos(angle)), 
+  rotation_matrix <- matrix(c(cos(angle), -sin(angle),
+                              sin(angle), cos(angle)),
                             ncol = 2)
-  
+
   # Apply the rotation to the coordinates
   rotated_coords <- t(rotation_matrix %*% t(coords))
-  
+
   return(rotated_coords)
 }
 
@@ -54,27 +54,30 @@ Omg[which(Distances <= 0.22)] = 1
 Omg <- Omg - diag(nrow = nrow(coords))
 # D <- diag(rowSums(Omg))
 D <- Matrix(diag(rowSums(Omg)) ,sparse = TRUE)
-sigma = 1
+sigma = 0.1
 period = 52
 
-location_time_0 <- which(y[,-ncol(y)]==0, arr.ind =  TRUE)
+
+location_time_0 <- which(y[,-ncol(y)]==1, arr.ind =  TRUE)
 row_idx <- location_time_0[,1]
-next_y <- y[cbind(location_time_0[,1], location_time_0[,2]+1)]
+next_y <- abs(y[cbind(location_time_0[,1], location_time_0[,2]+1)] - 1)
 design_mat <- Matrix(0, nrow = length(next_y), ncol = 8*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
-
-# pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
-covariates <- Matrix(
-  cbind(1,1,
-        cos(2*pi*location_time_0[,2]/period),
-        cos(2*pi*location_time_0[,2]/period),
-        sin(2*pi*location_time_0[,2]/period), 
-        sin(2*pi*location_time_0[,2]/period), 
-        location_time_0[,2], location_time_0[,2]), sparse = TRUE )
-
-# # Loop through chunks of rows
+# 
+# # pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
+# covariates <- Matrix(
+#   cbind(1,1,
+#         cos(2*pi*location_time_0[,2]/period),
+#         cos(2*pi*location_time_0[,2]/period),
+#         sin(2*pi*location_time_0[,2]/period), 
+#         sin(2*pi*location_time_0[,2]/period), 
+#         location_time_0[,2], location_time_0[,2]), sparse = TRUE )
+# 
+# 
+# # # Loop through chunks of rows
 # chunk_size <- 10
-# curr_row <- 1
+# # # 2470001
+# curr_row <- start_row <- 1
 # for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
 #   print(start_row)
 #   # Define the end row for the current chunk
@@ -97,8 +100,9 @@ covariates <- Matrix(
 #   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 # }
 # 
-# saveRDS(design_mat,"design_mat_01.Rda")
-design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01.Rda")
+# saveRDS(design_mat,"design_mat_10.Rda")
+design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_10.Rda")
+
 lats_design <- lats[row_idx]
 elev_design <- elev[row_idx,3]
 
@@ -113,18 +117,21 @@ other_covariates <- Matrix(
         elev_design*location_time_0[,2]), sparse = TRUE )
 
 design_mat <- cbind(design_mat, other_covariates)
+
+
 tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 8*S + 8, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
 curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S + 8)
-curr_tau_vec <- rep(1,8)
+curr_tau_vec <- rep(0.1,8)
 a_tau <- 0.001
 b_tau <- 0.001
 curr_idx <- 0
 save_idx <- 0
 burn = 0
 thin = 1
+
 prec <- D - Omg
 
 while(save_idx < tot_samples) {
@@ -134,6 +141,7 @@ while(save_idx < tot_samples) {
   kappas <- next_y - 1/2
   curr_phi <- design_mat %*% t(curr_theta_vec)
   curr_omega <-  rpg(length(next_y), h = 1, z = as.numeric(curr_phi))
+  
   # Sample current theta
   curr_prec <- bdiag(
     1/curr_tau_vec[1]*prec,
@@ -172,7 +180,9 @@ while(save_idx < tot_samples) {
     save_idx <- save_idx + 1
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
     all_tau[,save_idx] <-  as.vector(curr_tau_vec)
+    print(round(curr_tau_vec,5))
   }
+  
 }
 theta_mean <- apply(all_theta, 1, mean)
 theta_01 <- theta_mean[1:S]
@@ -184,8 +194,8 @@ theta_22 <- theta_mean[(5*S+1):(6*S)]
 theta_a1 <- theta_mean[(6*S+1):(7*S)]
 theta_a2 <- theta_mean[(7*S+1):(8*S)]
 
-saveRDS(all_theta, "self_theta_lat+alt.Rda")
-saveRDS(all_tau, "self_tau_long_lat+alt.Rda")
+saveRDS(all_theta, "self_theta_10_lat+alt.Rda")
+saveRDS(all_tau, "self_tau_10_lat+alt.Rda")
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))
 # theta_01_stan <- apply(samples$theta_01, 2, mean)
@@ -206,3 +216,4 @@ saveRDS(all_tau, "self_tau_long_lat+alt.Rda")
 # boxplot(cbind(theta_22, theta_22_stan))
 # boxplot(cbind(theta_a1, theta_a1_stan))
 # boxplot(cbind(theta_a2, theta_a2_stan))
+
