@@ -15,6 +15,7 @@ library(Matrix)
 library(future.apply)
 library(pbapply)
 setwd(here::here())
+library(sparseMVN) 
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
 all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
 y <- all_y[,-c(1,2)]
@@ -22,7 +23,6 @@ coords <- all_y[,1:2]
 
 elev <- read.csv(here::here("curr_elev.csv"))
 lats <- coords[,2]
-
 
 
 S <- nrow(y)
@@ -152,7 +152,7 @@ while(save_idx < tot_samples) {
     1/curr_tau_vec[6]*diag(1,S),
     1/curr_tau_vec[7]*prec,
     1/curr_tau_vec[8]*diag(1,S),
-    1/9*diag(1,8)
+    1/10000*diag(1,8)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -194,8 +194,8 @@ theta_22 <- theta_mean[(5*S+1):(6*S)]
 theta_a1 <- theta_mean[(6*S+1):(7*S)]
 theta_a2 <- theta_mean[(7*S+1):(8*S)]
 
-saveRDS(all_theta, "self_theta_10_lat+alt.Rda")
-saveRDS(all_tau, "self_tau_10_lat+alt.Rda")
+saveRDS(all_theta, "self_theta_10_lat+alt_prior_100.Rda")
+saveRDS(all_tau, "self_tau_10_lat+alt_prior_100.Rda")
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))
 # theta_01_stan <- apply(samples$theta_01, 2, mean)

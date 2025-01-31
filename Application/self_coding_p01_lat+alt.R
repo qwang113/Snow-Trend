@@ -144,7 +144,7 @@ while(save_idx < tot_samples) {
     1/curr_tau_vec[6]*diag(1,S),
     1/curr_tau_vec[7]*prec,
     1/curr_tau_vec[8]*diag(1,S),
-    1/9*diag(1,8)
+    1/10000*diag(1,8)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -184,8 +184,8 @@ theta_22 <- theta_mean[(5*S+1):(6*S)]
 theta_a1 <- theta_mean[(6*S+1):(7*S)]
 theta_a2 <- theta_mean[(7*S+1):(8*S)]
 
-saveRDS(all_theta, "self_theta_lat+alt.Rda")
-saveRDS(all_tau, "self_tau_long_lat+alt.Rda")
+saveRDS(all_theta, "self_theta_lat+alt_prior_100.Rda")
+saveRDS(all_tau, "self_tau_long_lat+alt_prior_100.Rda")
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))
 # theta_01_stan <- apply(samples$theta_01, 2, mean)
