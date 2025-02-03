@@ -207,6 +207,7 @@ for (i in 1:8) {
   )
 } 
 library(magick)
+
 # Trend Plot
 for (i in 1:52) {
   print(i)
@@ -216,10 +217,10 @@ for (i in 1:52) {
     geom_sf(data = trend_aeqd, aes(color = trend_aeqd[[i]] ), size = 2, shape = 18) + # Data points with color mapped
     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
+    scale_color_viridis_c(option = "C", direction = -1, limits = range(diff_mean)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend Mean for Week (with Lat+Alt)",i),
+      title = paste("Trend Mean (with Lat+Alt) for Week",i),
       color = ""
     ) +
     theme(
@@ -238,10 +239,10 @@ for (i in 1:52) {
     geom_sf(data = trend_aeqd, aes(color = trend_aeqd[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
+    scale_color_viridis_c(option = "C", direction = -1, limits = c(0, max(diff_sd))) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd for Week (with Lat+Alt)",i),
+      title = paste("Trend sd (with Lat+Alt) for Week",i),
       color = ""
     ) +
     theme(
@@ -263,6 +264,7 @@ for (i in 1:52) {
     dpi = 300                             # High resolution
   )
 } 
+png_files <- list.files(pattern = "plot_\\d+\\.png") 
 png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
 gif <- image_read(png_files)                       # Read images
 gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
