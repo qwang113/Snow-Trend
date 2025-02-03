@@ -219,7 +219,7 @@ for (i in 1:52) {
     scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend Mean for Week",i),
+      title = paste("Trend Mean for Week (with Lat+Alt)",i),
       color = ""
     ) +
     theme(
@@ -241,7 +241,7 @@ for (i in 1:52) {
     scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd for Week",i),
+      title = paste("Trend sd for Week (with Lat+Alt)",i),
       color = ""
     ) +
     theme(

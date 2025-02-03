@@ -41,8 +41,9 @@ covariates <- Matrix(
         location_time_0[,2]), sparse = TRUE )
 
 # # Loop through chunks of rows
-chunk_size <- 10000
-curr_row <- 1
+
+chunk_size <- 10
+curr_row <- 1589811
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
@@ -65,8 +66,8 @@ for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 }
 # 
-saveRDS(design_mat,"design_mat_01_INDEP.Rda")
-design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01_INDEP.Rda")
+saveRDS(design_mat,"design_mat_10_INDEP.Rda")
+# design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_10_INDEP.Rda")
 tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 4*S, ncol = tot_samples)
@@ -79,7 +80,6 @@ curr_idx <- 0
 save_idx <- 0
 burn = 0
 thin = 1
-prec <- D - Omg
 
 while(save_idx < tot_samples) {
   curr_idx = curr_idx + 1
@@ -90,10 +90,10 @@ while(save_idx < tot_samples) {
   curr_omega <-  rpg(length(next_y), h = 1, z = as.numeric(curr_phi))
   # Sample current theta
   curr_prec <- bdiag(
-    1/curr_tau_vec[1]*diag(1,S),
-    1/curr_tau_vec[2]*diag(1,S),
-    1/curr_tau_vec[3]*diag(1,S),
-    1/curr_tau_vec[4]*diag(1,S)
+    1/25*diag(1,S),
+    1/25*diag(1,S),
+    1/25*diag(1,S),
+    1/1*diag(1,S)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -104,22 +104,14 @@ while(save_idx < tot_samples) {
   # pos_mu_2 <- solve(pos_prec, b)
   curr_theta_vec <- rmvn.sparse(1, mu = pos_mu, CH = CH, prec = TRUE)
   
-  # Sample taus
-  curr_tau_vec[1] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[1:S])%*%prec%*%curr_theta_vec[1:S]/2) )
-  curr_tau_vec[2] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(S+1):(2*S)])%*%curr_theta_vec[(S+1):(2*S)]/2 ) )
-  
-  curr_tau_vec[3] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(2*S+1):(3*S)])%*%prec%*%curr_theta_vec[(2*S+1):(3*S)]/2 ) )
-  curr_tau_vec[4] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(3*S+1):(4*S)])%*%curr_theta_vec[(3*S+1):(4*S)]/2 ) )
-  
   if((curr_idx > burn) & (curr_idx %% thin == 0) ){
     save_idx <- save_idx + 1
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
-    all_tau[,save_idx] <-  as.vector(curr_tau_vec)
   }
 }
 
-saveRDS(all_theta, "self_theta_INDEP.Rda")
-saveRDS(all_tau, "self_tau_INDEP.Rda")
+saveRDS(all_theta, "self_theta_10_INDEP.Rda")
+
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))
 # theta_01_stan <- apply(samples$theta_01, 2, mean)
