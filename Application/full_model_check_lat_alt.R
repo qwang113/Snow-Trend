@@ -126,9 +126,9 @@ for (week_idx in 1:52) {
         weekly_ini[idx, s, week_idx, ] <- curr_p0
       }
       # For location s, calculate the last year probability for week week_idx
-      curr_p0 <- matrix(c(y[s,1] == 0, y[s,1] == 1), ncol = 1)
+      curr_p0 <- c(y[s,1] == 0, y[s,1] == 1)
       for(t in 1:(week_idx+53*52-1)){
-        curr_p0 <- P[s,t,,]%*%(curr_p0)
+        curr_p0 <- curr_p0 %*% P[s,t,,]
       }
       weekly_final[idx, s, week_idx, ] <- curr_p0
     }
