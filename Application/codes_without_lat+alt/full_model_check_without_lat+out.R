@@ -76,7 +76,7 @@ winter_weeks <- c(20, 27, 33)
 
 weekly_ini <- array(NA, dim = c(length(sample_idx),SS,52,2))
 weekly_final <- array(NA, dim = c(length(sample_idx),SS,52,2))
-
+for (week_idx in 1:52) {
   for (idx in 1:length(sample_idx)) {
     print(paste("Now doing week", week_idx, "Sample index",idx))
     for (time in 1:(TT-1)) {
@@ -86,7 +86,6 @@ weekly_final <- array(NA, dim = c(length(sample_idx),SS,52,2))
       P[, time, 2, 1] <- inv_logit(beta_0s_hat[,idx] + beta_1s_hat[,idx] * cos(2*pi*time/period) + beta_2s_hat[,idx] * sin(2*pi*time/period)+ alpha_s_hat[,idx] * time)
       P[, time, 2, 2] <- 1 - P[, time, 2, 1]
     }
-    for (week_idx in 1:52) {
     for (s in 1:SS) {
       # For location s, calculate the first year probability for week week_idx
       curr_p0 <- t(c(y[s,1] == 0, y[s,1] == 1))
