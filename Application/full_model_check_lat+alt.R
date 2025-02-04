@@ -136,8 +136,8 @@ saveRDS(weekly_final, "weekly_final_with_lat+out.Rda")
 
 
 # First year
-weekly_ini <- readRDS("weekly_ini.Rda")
-weekly_final <- readRDS("weekly_final.Rda")
+weekly_ini <- readRDS("weekly_ini_with_lat+out.Rda")
+weekly_final <- readRDS("weekly_final_with_lat+out.Rda")
 p_snow_diff <- weekly_final[,,,2] - weekly_ini[,,,2]
 diff_mean <- apply(p_snow_diff,c(2,3),mean)
 diff_sd <- apply(p_snow_diff,c(2,3),sd)
@@ -209,11 +209,18 @@ for (i in 1:52) {
   print(i)
   # Create the plot
   plot1 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+    geom_sf(data = world_aeqd, fill = NA, color = NA) + # World map
     geom_sf(data = trend_aeqd, aes(color = trend_aeqd[[i]] ), size = 2, shape = 18) + # Data points with color mapped
     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1, limits = range(diff_mean)) + # Vibrant color palette
+    scale_color_gradient2(
+      low = "red",          # Color for negative values
+      mid = "transparent",  # Color for zero
+      high = "blue",         # Color for positive values
+      midpoint = 0,          # Set midpoint at zero
+      limits = c(-0.5,0.5), # Set the range of the legend
+      guide = "colourbar"
+    ) +
     theme_minimal() +
     labs(
       title = paste("Trend Mean (with Lat+Alt) for Week",i),
