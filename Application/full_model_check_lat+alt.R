@@ -13,7 +13,7 @@ y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 elev <- read.csv(here::here("curr_elev.csv"))[,3]
 lats <- coords[,2]
-sample_idx <- seq(from = 1002, to = 2000, by = 2)
+sample_idx <- seq(from = 1005, to = 2000, by = 5)
 
 setwd("D:/77/Research/temp/snow_trend")
 theta <- readRDS("self_theta_lat+alt.Rda")[,sample_idx]
@@ -93,28 +93,24 @@ period <- 52
 P <- array(NA, dim = c(SS, TT-1, 2, 2))
 inv_logit <- function(x){return(1/(1+exp(-x)))}
 
-# Winter begins: Week 20 (December 21st).
-# Winter midpoint: Week 27 (February 4th).
-# Winter ends: Week 33 (March 20th).
-winter_weeks <- c(20, 27, 33)
-
 # Prediction for the first year
 
 
 weekly_ini <- array(NA, dim = c(length(sample_idx),SS,52,2))
 weekly_final <- array(NA, dim = c(length(sample_idx),SS,52,2))
-for (week_idx in 1:52) {
-  for (idx in 1:length(sample_idx)) {
+
+for (idx in 1:length(sample_idx)) {
+  for (time in 1:(TT-1)) {
+    P[, time, 1, 2] <- inv_logit(
+      beta_0_hat[,idx] + beta_1_hat[,idx] * cos(2*pi*time/period) + beta_2_hat[,idx] * sin(2*pi*time/period) + alpha_hat[,idx] * time)
+    P[, time, 1, 1] <- 1 - P[, time, 1, 2]
+    P[, time, 2, 1] <- inv_logit(beta_0s_hat[,idx] + beta_1s_hat[,idx] * cos(2*pi*time/period) + beta_2s_hat[,idx] * sin(2*pi*time/period)+ alpha_s_hat[,idx] * time)
+    P[, time, 2, 2] <- 1 - P[, time, 2, 1]
+  }
+  
+  for (week_idx in 1:52) {
     print(paste("Now doing week", week_idx, "Sample index",idx))
-    for (time in 1:(TT-1)) {
-      P[, time, 1, 2] <- inv_logit(
-        beta_0_hat[,idx] + beta_1_hat[,idx] * cos(2*pi*time/period) + beta_2_hat[,idx] * sin(2*pi*time/period) + alpha_hat[,idx] * time)
-      P[, time, 1, 1] <- 1 - P[, time, 1, 2]
-      P[, time, 2, 1] <- inv_logit(beta_0s_hat[,idx] + beta_1s_hat[,idx] * cos(2*pi*time/period) + beta_2s_hat[,idx] * sin(2*pi*time/period)+ alpha_s_hat[,idx] * time)
-      P[, time, 2, 2] <- 1 - P[, time, 2, 1]
-    }
     for (s in 1:SS) {
-      
       # For location s, calculate the first year probability for week week_idx
       curr_p0 <- t(c(y[s,1] == 0, y[s,1] == 1))
       if(week_idx == 1){
@@ -126,7 +122,7 @@ for (week_idx in 1:52) {
         weekly_ini[idx, s, week_idx, ] <- curr_p0
       }
       # For location s, calculate the last year probability for week week_idx
-      curr_p0 <- c(y[s,1] == 0, y[s,1] == 1)
+      curr_p0 <- t(c(y[s,1] == 0, y[s,1] == 1))
       for(t in 1:(week_idx+53*52-1)){
         curr_p0 <- curr_p0 %*% P[s,t,,]
       }
@@ -135,8 +131,8 @@ for (week_idx in 1:52) {
   }
 }
 
-saveRDS(weekly_ini, "weekly_ini.Rda")
-saveRDS(weekly_final, "weekly_final.Rda")
+saveRDS(weekly_ini, "weekly_ini_with_lat+out.Rda")
+saveRDS(weekly_final, "weekly_final_with_lat+out.Rda")
 
 
 # First year
@@ -227,7 +223,7 @@ for (i in 1:52) {
       legend.position = "bottom",
       plot.title = element_text(hjust = 0.5)
     ) + 
-     guides(
+    guides(
       color = guide_colorbar(
         barwidth = 20,   # Adjust the width of the color bar
         barheight = 0.5  # Adjust the height of the color bar

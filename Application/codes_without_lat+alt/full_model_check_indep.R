@@ -16,10 +16,8 @@ lats <- coords[,2]
 sample_idx <- seq(from = 1005, to = 2000, by = 5)
 
 setwd("D:/77/Research/temp/snow_trend")
-theta <- readRDS("self_theta.Rda")[,sample_idx]
-all_tau <- readRDS("self_tau.Rda")[,sample_idx]
-theta_s <- readRDS("self_theta_10.Rda")[,sample_idx]
-all_taus <- readRDS("self_tau_10.Rda")[,sample_idx]
+theta <- readRDS("self_theta_INDEP.Rda")[,sample_idx]
+theta_s <- readRDS("self_theta_10_INDEP.Rda")[,sample_idx]
 S <- nrow(y)
 
 theta_01_all <- theta[1:S,]
