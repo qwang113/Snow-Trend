@@ -21,36 +21,36 @@ theta_s <- readRDS("self_theta_10_INDEP.Rda")[,sample_idx]
 S <- nrow(y)
 
 theta_01_all <- theta[1:S,]
-theta_02_all <- theta[(S+1):(2*S),]
-theta_11_all <- theta[(2*S+1):(3*S),]
-theta_12_all <- theta[(3*S+1):(4*S),]
-theta_21_all <- theta[(4*S+1):(5*S),]
-theta_22_all <- theta[(5*S+1):(6*S),]
-theta_a1_all <- theta[(6*S+1):(7*S),]
-theta_a2_all <- theta[(7*S+1):(8*S),]
+
+theta_11_all <- theta[(S+1):(2*S),]
+
+theta_21_all <- theta[(2*S+1):(3*S),]
+
+theta_a1_all <- theta[(3*S+1):(4*S),]
+
 
 
 theta_01s_all <- theta_s[1:S,]
-theta_02s_all <- theta_s[(S+1):(2*S),]
-theta_11s_all <- theta_s[(2*S+1):(3*S),]
-theta_12s_all <- theta_s[(3*S+1):(4*S),]
-theta_21s_all <- theta_s[(4*S+1):(5*S),]
-theta_22s_all <- theta_s[(5*S+1):(6*S),]
-theta_a1s_all <- theta_s[(6*S+1):(7*S),]
-theta_a2s_all <- theta_s[(7*S+1):(8*S),]
+
+theta_11s_all <- theta_s[(S+1):(2*S),]
+
+theta_21s_all <- theta_s[(2*S+1):(3*S),]
+
+theta_a1s_all <- theta_s[(3*S+1):(4*S),]
 
 
 
 
-beta_0_hat <- theta_01_all + theta_02_all
-beta_1_hat <- theta_11_all + theta_12_all
-beta_2_hat <- theta_21_all + theta_22_all
-alpha_hat <- theta_a1_all + theta_a2_all
 
-beta_0s_hat <- theta_01s_all + theta_02s_all
-beta_1s_hat <- theta_11s_all + theta_12s_all
-beta_2s_hat <- theta_21s_all + theta_22s_all
-alpha_s_hat <- theta_a1s_all + theta_a2s_all
+beta_0_hat <- theta_01_all 
+beta_1_hat <- theta_11_all 
+beta_2_hat <- theta_21_all 
+alpha_hat <- theta_a1_all 
+
+beta_0s_hat <- theta_01s_all
+beta_1s_hat <- theta_11s_all
+beta_2s_hat <- theta_21s_all 
+alpha_s_hat <- theta_a1s_all
 
 
 
@@ -72,8 +72,8 @@ winter_weeks <- c(20, 27, 33)
 # Prediction for the first year
 
 
-weekly_ini <- array(NA, dim = c(length(sample_idx),SS,52,2))
-weekly_final <- array(NA, dim = c(length(sample_idx),SS,52,2))
+weekly_ini_INDEP <- array(NA, dim = c(length(sample_idx),SS,52,2))
+weekly_final_INDEP <- array(NA, dim = c(length(sample_idx),SS,52,2))
 for (week_idx in 1:52) {
   for (idx in 1:length(sample_idx)) {
     print(paste("Now doing week", week_idx, "Sample index",idx))
@@ -88,7 +88,7 @@ for (week_idx in 1:52) {
       # For location s, calculate the first year probability for week week_idx
       curr_p0 <- t(c(y[s,1] == 0, y[s,1] == 1))
       if(week_idx == 1){
-        weekly_ini[idx, s, week_idx, ] <- curr_p0
+        weekly_ini_INDEP[idx, s, week_idx, ] <- curr_p0
       }else{
         for(t in 1:(week_idx-1)){
           curr_p0 <- curr_p0 %*% P[s,t,,]
@@ -100,21 +100,19 @@ for (week_idx in 1:52) {
       for(t in 1:(week_idx+53*52-1)){
         curr_p0 <- curr_p0 %*% P[s,t,,]
       }
-      weekly_final[idx, s, week_idx, ] <- curr_p0
+      weekly_final_INDEP[idx, s, week_idx, ] <- curr_p0
     }
   }
 }
 
-saveRDS(weekly_ini, "weekly_ini_without_lat+out.Rda")
-saveRDS(weekly_final, "weekly_final_without_lat+out.Rda")
+saveRDS(weekly_ini_INDEP, "weekly_ini_INDEP.Rda")
+saveRDS(weekly_final_INDEP, "weekly_final_INDEP.Rda")
 
-
-# First year
-weekly_ini <- readRDS("weekly_ini_without_lat+out.Rda")
-weekly_final <- readRDS("weekly_final_without_lat+out.Rda")
-p_snow_diff <- weekly_final[,,,2] - weekly_ini[,,,2]
-diff_mean <- apply(p_snow_diff,c(2,3),mean)
-diff_sd <- apply(p_snow_diff,c(2,3),sd)
+weekly_ini_INDEP <- readRDS("weekly_ini_INDEP.Rda")
+weekly_final_INDEP <- readRDS("weekly_final_INDEP.Rda")
+p_snow_diff <- weekly_final_INDEP[,,,2] - weekly_ini_INDEP[,,,2]
+diff_mean_lat_alt <- apply(p_snow_diff,c(2,3),mean)
+diff_sd_lat_alt <- apply(p_snow_diff,c(2,3),sd)
 
 
 # ----------------------------------------------------------------------------Plots
@@ -176,68 +174,3 @@ for (i in 1:8) {
     dpi = 300                             # High resolution
   )
 } 
-library(magick)
-# Trend Plot
-for (i in 1:52) {
-  print(i)
-  # Create the plot
-  plot1 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd, aes(color = trend_aeqd[[i]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
-    theme_minimal() +
-    labs(
-      title = paste("Trend Mean for Week (No Covariates)",i),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-     guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
-    )
-  
-  plot2 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd, aes(color = trend_aeqd[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
-    theme_minimal() +
-    labs(
-      title = paste("Trend sd for Week0",i),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-    guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
-    )
-  plot = cowplot::plot_grid(plot1,plot2, nrow = 1)
-  # Save the plot
-  ggsave(
-    filename = paste0("plot_",i, ".png"), # Save as plot_1.png, plot_2.png, ...
-    plot = plot,                          # Specify the plot object
-    width = 10, height = 6,                # Set width and height
-    dpi = 300                             # High resolution
-  )
-} 
-png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
-gif <- image_read(png_files)                       # Read images
-gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
-image_write(gif, "trend_animation.gif")            # Save the GIF
-
-
-
-

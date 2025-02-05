@@ -111,38 +111,6 @@ saveRDS(weekly_ini, "weekly_ini_without_lat+out.Rda")
 saveRDS(weekly_final, "weekly_final_without_lat+out.Rda")
 
 
-# First year
-weekly_ini <- readRDS("weekly_ini_without_lat+out.Rda")
-weekly_final <- readRDS("weekly_final_without_lat+out.Rda")
-p_snow_diff <- weekly_final[,,,2] - weekly_ini[,,,2]
-diff_mean <- apply(p_snow_diff,c(2,3),mean)
-diff_sd <- apply(p_snow_diff,c(2,3),sd)
-
-
-# ----------------------------------------------------------------------------Plots
-world <- ne_countries(scale = "medium", returnclass = "sf")
-world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
-
-# Convert the data frame to an sf object
-sf_data <- st_as_sf(data.frame(cbind(coords, beta_0_hat, beta_1_hat, beta_2_hat, alpha_hat, beta_0s_hat, beta_1s_hat, beta_2s_hat, alpha_s_hat))
-                    , coords = c("LON", "LAT"), crs = 4326)
-
-aeqd_proj <- "+proj=aeqd +lat_0=90 +lon_0=-100"
-
-# Trend
-trend_data <- st_as_sf(data.frame(cbind(coords, diff_mean, diff_sd)), coords = c("LON", "LAT"), crs = 4326)
-trend_aeqd <- st_transform(trend_data, crs = aeqd_proj)
-world_aeqd <- st_transform(world_north, crs = aeqd_proj)
-sf_data_aeqd <- st_transform(sf_data, crs = aeqd_proj)
-
-equator_points <- data.frame(
-  lon = seq(-180, 180, length.out = 200),
-  lat = rep(0, 100)  # All points at latitude = 0
-)
-
-# Transform equator points to the azimuthal equidistant projection
-equator_sf <- st_as_sf(equator_points, coords = c("lon", "lat"), crs = 4326) 
-equator_aeqd <- st_transform(equator_sf, crs = aeqd_proj)
 
 
 # Plot for a single time
@@ -178,67 +146,6 @@ for (i in 1:8) {
     dpi = 300                             # High resolution
   )
 } 
-library(magick)
-# Trend Plot
-for (i in 1:52) {
-  print(i)
-  # Create the plot
-  plot1 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd, aes(color = trend_aeqd[[i]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
-    theme_minimal() +
-    labs(
-      title = paste("Trend Mean for Week (No Covariates)",i),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-     guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
-    )
-  
-  plot2 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd, aes(color = trend_aeqd[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
-    theme_minimal() +
-    labs(
-      title = paste("Trend sd for Week0",i),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-    guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
-    )
-  plot = cowplot::plot_grid(plot1,plot2, nrow = 1)
-  # Save the plot
-  ggsave(
-    filename = paste0("plot_",i, ".png"), # Save as plot_1.png, plot_2.png, ...
-    plot = plot,                          # Specify the plot object
-    width = 10, height = 6,                # Set width and height
-    dpi = 300                             # High resolution
-  )
-} 
-png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
-gif <- image_read(png_files)                       # Read images
-gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
-image_write(gif, "trend_animation.gif")            # Save the GIF
 
 
 
