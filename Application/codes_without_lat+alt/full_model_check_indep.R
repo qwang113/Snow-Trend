@@ -93,7 +93,7 @@ for (week_idx in 1:52) {
         for(t in 1:(week_idx-1)){
           curr_p0 <- curr_p0 %*% P[s,t,,]
         }
-        weekly_ini[idx, s, week_idx, ] <- curr_p0
+        weekly_ini_INDEP[idx, s, week_idx, ] <- curr_p0
       }
       # For location s, calculate the last year probability for week week_idx
       curr_p0 <- t(c(y[s,1] == 0, y[s,1] == 1))
@@ -111,8 +111,8 @@ saveRDS(weekly_final_INDEP, "weekly_final_INDEP.Rda")
 weekly_ini_INDEP <- readRDS("weekly_ini_INDEP.Rda")
 weekly_final_INDEP <- readRDS("weekly_final_INDEP.Rda")
 p_snow_diff <- weekly_final_INDEP[,,,2] - weekly_ini_INDEP[,,,2]
-diff_mean_lat_alt <- apply(p_snow_diff,c(2,3),mean)
-diff_sd_lat_alt <- apply(p_snow_diff,c(2,3),sd)
+diff_mean_INDEP <- apply(p_snow_diff,c(2,3),mean)
+diff_sd_INDEP <- apply(p_snow_diff,c(2,3),sd)
 
 
 # ----------------------------------------------------------------------------Plots

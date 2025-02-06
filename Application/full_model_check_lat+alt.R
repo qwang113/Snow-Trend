@@ -16,10 +16,10 @@ lats <- coords[,2]
 sample_idx <- seq(from = 1005, to = 2000, by = 5)
 
 setwd("D:/77/Research/temp/snow_trend")
-theta <- readRDS("self_theta_lat+alt.Rda")[,sample_idx]
-all_tau <- readRDS("self_tau_lat+alt.Rda")[,sample_idx]
-theta_s <- readRDS("self_theta_10_lat+alt.Rda")[,sample_idx]
-all_taus <- readRDS("self_tau_10_lat+alt.Rda")[,sample_idx]
+theta <- readRDS("self_theta_lat+alt_prior_100.Rda")[,sample_idx]
+all_tau <- readRDS("self_tau_lat+alt_prior_100.Rda")[,sample_idx]
+theta_s <- readRDS("self_theta_10_lat+alt_prior_100.Rda")[,sample_idx]
+all_taus <- readRDS("self_tau_10_lat+alt_prior_100.Rda")[,sample_idx]
 
 theta_mean_01 <- apply(theta, 1, mean)
 theta_mean_10 <- apply(theta_s, 1, mean)
@@ -129,16 +129,13 @@ for (idx in 1:length(sample_idx)) {
   }
 }
 
-saveRDS(weekly_ini_lat_alt, "weekly_ini_with_lat+out.Rda")
-saveRDS(weekly_final_lat_alt, "weekly_final_with_lat+out.Rda")
+saveRDS(weekly_ini_lat_alt, "weekly_ini_with_lat+out_prior_100.Rda")
+saveRDS(weekly_final_lat_alt, "weekly_final_with_lat+out_prior_100.Rda")
 
 
 # First year
-weekly_ini_lat_alt <- readRDS("weekly_ini_with_lat+out.Rda")
-weekly_final_lat_alt <- readRDS("weekly_final_with_lat+out.Rda")
-p_snow_diff <- weekly_final_lat_alt[,,,2] - weekly_ini_lat_alt[,,,2]
-diff_mean_lat_alt <- apply(p_snow_diff,c(2,3),mean)
-diff_sd_lat_alt <- apply(p_snow_diff,c(2,3),sd)
+weekly_ini_lat_alt <- readRDS("weekly_ini_with_lat+out_prior_100.Rda")
+weekly_final_lat_alt <- readRDS("weekly_final_with_lat+out_prior_100.Rda")
 
 
 # ----------------------------------------------------------------------------Plots
