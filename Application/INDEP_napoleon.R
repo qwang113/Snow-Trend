@@ -276,19 +276,17 @@ for (i in 1:length(next_y)) {
 yisu_llh <- llh
 
 pred <- matrix(NA, nrow = 2, ncol = TT)
-
 curr_p0 <- t(c(y[1,1] == 0, y[1,1] == 1))
 pred[,1] <- curr_p0
-
 for(t in 1:(TT-1)){
   curr_p0 <- curr_p0 %*% my_P[t,,]
   pred[,t+1] <- curr_p0
 }
 
-# Assume your vector is named vec
 vec <- pred[2, ]  # Example data
 mat <- matrix(vec, nrow = 52, ncol = 54)
 my_esn <- colSums(mat)
+
 
 curr_p0 <- t(c(y[1,1] == 0, y[1,1] == 1))
 pred[,1] <- curr_p0
@@ -297,20 +295,13 @@ for(t in 1:(TT-1)){
   pred[,t+1] <- curr_p0
 }
 
-# Assume your vector is named vec
+
 vec <- pred[2, ]  # Example data
 mat <- matrix(vec, nrow = 52, ncol = 54)
-my_esn <- colSums(mat)
+yisu_esn <- colSums(mat)
 
 
 vec <- as.numeric(y[1,])
 mat <- matrix(vec, nrow = 52, ncol = 54)
 true_sn <- colSums(mat)
 
-
-
-# apply(p01_params[c(1,3,5,7),], 1, mean)
-# apply(p10_params[c(1,3,5,7),], 1, mean)
-# my_param <- c(apply(p01_params[c(1,3,5,7),], 1, mean), apply(p10_params[c(1,3,5,7),], 1, mean))
-# yisu_param <- c(-3.2016, -4.073, 0.791, 0.0000382, 1.7258, 3.669, -0.944, -0.0004935)
-# round(cbind(my_param,yisu_param),7)
