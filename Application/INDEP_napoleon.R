@@ -100,7 +100,6 @@ while(save_idx < tot_samples) {
   # pos_mu_2 <- solve(pos_prec, b)
   curr_theta_vec <- rmvn.sparse(1, mu = pos_mu, CH = CH, prec = TRUE)
   
-  # Sample taus
   if((curr_idx > burn) & (curr_idx %% thin == 0) ){
     save_idx <- save_idx + 1
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
@@ -179,7 +178,7 @@ while(save_idx < tot_samples) {
     1/100*diag(1,S)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
-  pos_prec <- xtxomg + curr_prec
+  pos_prec <- (xtxomg+t(xtxomg))/2 + curr_prec
   CH <- Cholesky(pos_prec, LDL = FALSE)
   b <- t(design_mat) %*% kappas
   # Solve pos_prec %*% x = b for x
@@ -194,9 +193,124 @@ while(save_idx < tot_samples) {
 
 p10_params <- all_theta
 
+# -----------------------------------------compare the likelihood
+theta <- p01_params
+theta_s <- p10_params
 
-apply(p01_params[c(1,3,5,7),], 1, mean)
-apply(p10_params[c(1,3,5,7),], 1, mean)
-my_param <- c(apply(p01_params[c(1,3,5,7),], 1, mean), apply(p10_params[c(1,3,5,7),], 1, mean))
-yisu_param <- c(-3.2016, -4.073, 0.791, 0.0000382, 1.7258, 3.669, -0.944, -0.0004935)
-round(cbind(my_param,yisu_param),7)
+beta_0_hat <- mean(theta[1,])
+beta_1_hat <- mean(theta[3,])
+beta_2_hat <- mean(theta[5,])
+alpha_hat <- mean(theta[7,])
+beta_0s_hat <- mean(theta_s[1,])
+beta_1s_hat <- mean(theta_s[3,])
+beta_2s_hat <- mean(theta_s[5,])
+alpha_s_hat <- mean(theta_s[7,])
+
+SS <- dim(y)[1]
+TT <- dim(y)[2]
+period <- 52
+
+P <- array(NA, dim = c(SS, TT-1, 2, 2))
+inv_logit <- function(x){return(1/(1+exp(-x)))}
+for (time in 1:(TT-1)) {
+  P[, time, 1, 2] <- inv_logit(
+    beta_0_hat + beta_1_hat* cos(2*pi*time/period) + beta_2_hat * sin(2*pi*time/period) + alpha_hat * time)
+  P[, time, 1, 1] <- 1 - P[, time, 1, 2]
+  P[, time, 2, 1] <- inv_logit(beta_0s_hat + beta_1s_hat * cos(2*pi*time/period) + beta_2s_hat * sin(2*pi*time/period)+ alpha_s_hat * time)
+  P[, time, 2, 2] <- 1 - P[, time, 2, 1]
+}
+P_nap <- P[1,,,]
+my_P <- P_nap
+location_time_0 <- which(y[1,-ncol(y)]==0, arr.ind =  TRUE)
+next_y <- y[cbind(location_time_0[,1], location_time_0[,2]+1)]
+
+llh <- 0
+for (i in 1:length(next_y)) {
+  llh <- llh + ifelse(next_y[i]==0, log(P_nap[location_time_0[i,2],1,1]), log(P_nap[location_time_0[i,2],1,2]))
+}
+
+location_time_1<- which(y[1,-ncol(y)]==1, arr.ind =  TRUE)
+next_y <- y[cbind(location_time_1[,1], location_time_1[,2]+1)]
+for (i in 1:length(next_y)) {
+  llh <- llh + ifelse(next_y[i]==0, log(P_nap[location_time_1[i,2],2,1]), log(P_nap[location_time_1[i,2],2,2]))
+}
+my_llh <- llh
+
+
+
+beta_0_hat <- -3.323236
+beta_1_hat <- -4.204593
+beta_2_hat <- 0.886424 
+alpha_hat <- -3.464589e-05
+beta_0s_hat <- 1.532151 
+beta_1s_hat <- 3.76802
+beta_2s_hat <- 0.33008
+alpha_s_hat <- -0.0004243435
+
+SS <- dim(y)[1]
+TT <- dim(y)[2]
+period <- 52
+
+P <- array(NA, dim = c(SS, TT-1, 2, 2))
+inv_logit <- function(x){return(1/(1+exp(-x)))}
+for (time in 1:(TT-1)) {
+  P[, time, 1, 2] <- inv_logit(
+    beta_0_hat + beta_1_hat* cos(2*pi*time/period) + beta_2_hat * sin(2*pi*time/period) + alpha_hat * time)
+  P[, time, 1, 1] <- 1 - P[, time, 1, 2]
+  P[, time, 2, 1] <- inv_logit(beta_0s_hat + beta_1s_hat * cos(2*pi*time/period) + beta_2s_hat * sin(2*pi*time/period)+ alpha_s_hat * time)
+  P[, time, 2, 2] <- 1 - P[, time, 2, 1]
+}
+P_nap <- P[1,,,]
+location_time_0 <- which(y[1,-ncol(y)]==0, arr.ind =  TRUE)
+next_y <- y[cbind(location_time_0[,1], location_time_0[,2]+1)]
+yisu_P <- P_nap
+llh <- 0
+for (i in 1:length(next_y)) {
+  llh <- llh + ifelse(next_y[i]==0, log(P_nap[location_time_0[i,2],1,1]), log(P_nap[location_time_0[i,2],1,2]))
+}
+location_time_1<- which(y[1,-ncol(y)]==1, arr.ind =  TRUE)
+next_y <- y[cbind(location_time_1[,1], location_time_1[,2]+1)]
+for (i in 1:length(next_y)) {
+  llh <- llh + ifelse(next_y[i]==0, log(P_nap[location_time_1[i,2],2,1]), log(P_nap[location_time_1[i,2],2,2]))
+}
+yisu_llh <- llh
+
+pred <- matrix(NA, nrow = 2, ncol = TT)
+
+curr_p0 <- t(c(y[1,1] == 0, y[1,1] == 1))
+pred[,1] <- curr_p0
+
+for(t in 1:(TT-1)){
+  curr_p0 <- curr_p0 %*% my_P[t,,]
+  pred[,t+1] <- curr_p0
+}
+
+# Assume your vector is named vec
+vec <- pred[2, ]  # Example data
+mat <- matrix(vec, nrow = 52, ncol = 54)
+my_esn <- colSums(mat)
+
+curr_p0 <- t(c(y[1,1] == 0, y[1,1] == 1))
+pred[,1] <- curr_p0
+for(t in 1:(TT-1)){
+  curr_p0 <- curr_p0 %*% yisu_P[t,,]
+  pred[,t+1] <- curr_p0
+}
+
+# Assume your vector is named vec
+vec <- pred[2, ]  # Example data
+mat <- matrix(vec, nrow = 52, ncol = 54)
+my_esn <- colSums(mat)
+
+
+vec <- as.numeric(y[1,])
+mat <- matrix(vec, nrow = 52, ncol = 54)
+true_sn <- colSums(mat)
+
+
+
+# apply(p01_params[c(1,3,5,7),], 1, mean)
+# apply(p10_params[c(1,3,5,7),], 1, mean)
+# my_param <- c(apply(p01_params[c(1,3,5,7),], 1, mean), apply(p10_params[c(1,3,5,7),], 1, mean))
+# yisu_param <- c(-3.2016, -4.073, 0.791, 0.0000382, 1.7258, 3.669, -0.944, -0.0004935)
+# round(cbind(my_param,yisu_param),7)
