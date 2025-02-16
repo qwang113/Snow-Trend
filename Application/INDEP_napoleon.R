@@ -314,3 +314,8 @@ true_sn <- colSums(mat)
 # my_param <- c(apply(p01_params[c(1,3,5,7),], 1, mean), apply(p10_params[c(1,3,5,7),], 1, mean))
 # yisu_param <- c(-3.2016, -4.073, 0.791, 0.0000382, 1.7258, 3.669, -0.944, -0.0004935)
 # round(cbind(my_param,yisu_param),7)
+
+
+# Scatter plot for the variance
+# Variance ratio map
+# Different of E(S_n) map
