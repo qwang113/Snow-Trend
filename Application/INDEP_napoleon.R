@@ -276,19 +276,17 @@ for (i in 1:length(next_y)) {
 yisu_llh <- llh
 
 pred <- matrix(NA, nrow = 2, ncol = TT)
-
 curr_p0 <- t(c(y[1,1] == 0, y[1,1] == 1))
 pred[,1] <- curr_p0
-
 for(t in 1:(TT-1)){
   curr_p0 <- curr_p0 %*% my_P[t,,]
   pred[,t+1] <- curr_p0
 }
 
-# Assume your vector is named vec
 vec <- pred[2, ]  # Example data
 mat <- matrix(vec, nrow = 52, ncol = 54)
 my_esn <- colSums(mat)
+
 
 curr_p0 <- t(c(y[1,1] == 0, y[1,1] == 1))
 pred[,1] <- curr_p0
@@ -297,16 +295,15 @@ for(t in 1:(TT-1)){
   pred[,t+1] <- curr_p0
 }
 
-# Assume your vector is named vec
+
 vec <- pred[2, ]  # Example data
 mat <- matrix(vec, nrow = 52, ncol = 54)
-my_esn <- colSums(mat)
+yisu_esn <- colSums(mat)
 
 
 vec <- as.numeric(y[1,])
 mat <- matrix(vec, nrow = 52, ncol = 54)
 true_sn <- colSums(mat)
-
 
 
 # apply(p01_params[c(1,3,5,7),], 1, mean)
@@ -319,3 +316,4 @@ true_sn <- colSums(mat)
 # Scatter plot for the variance
 # Variance ratio map
 # Different of E(S_n) map
+
