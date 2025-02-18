@@ -21,24 +21,16 @@ theta_s <- readRDS("self_theta_10_INDEP.Rda")[,sample_idx]
 S <- nrow(y)
 
 theta_01_all <- theta[1:S,]
-
 theta_11_all <- theta[(S+1):(2*S),]
-
 theta_21_all <- theta[(2*S+1):(3*S),]
-
 theta_a1_all <- theta[(3*S+1):(4*S),]
 
 
 
 theta_01s_all <- theta_s[1:S,]
-
 theta_11s_all <- theta_s[(S+1):(2*S),]
-
 theta_21s_all <- theta_s[(2*S+1):(3*S),]
-
 theta_a1s_all <- theta_s[(3*S+1):(4*S),]
-
-
 
 
 

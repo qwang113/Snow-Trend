@@ -77,7 +77,7 @@ equator_points <- data.frame(
 equator_sf <- st_as_sf(equator_points, coords = c("lon", "lat"), crs = 4326) 
 equator_aeqd <- st_transform(equator_sf, crs = aeqd_proj)
 
-
+wk_names <- substr(names(all_y[3:54]),2,5) 
 library(magick)
 # Trend Plot
 for (i in 2:52) {
@@ -98,7 +98,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean for Week (No Covariates)",i),
+      title = paste("Trend Mean for Week (No Covariates)",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -120,7 +120,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.18)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd for Week (No Covariates)",i),
+      title = paste("Trend sd for Week (No Covariates)",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -149,7 +149,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean (with Lat+Alt) for Week",i),
+      title = paste("Trend Mean (with Lat+Alt) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -171,7 +171,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0,0.18)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd (with Lat+Alt) for Week",i),
+      title = paste("Trend sd (with Lat+Alt) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -199,7 +199,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean (Independent) for Week",i),
+      title = paste("Trend Mean (Independent) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -221,7 +221,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0,0.18)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd (Independent) for Week",i),
+      title = paste("Trend sd (Independent) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -279,7 +279,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean for Week (prior sd = 5)",i),
+      title = paste("Trend Mean for Week (prior sd = 5)",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -301,7 +301,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd for Week (prior sd = 5)",i),
+      title = paste("Trend sd for Week (prior sd = 5)",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -329,7 +329,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean for Week (prior sd = 100)",i),
+      title = paste("Trend Mean for Week (prior sd = 100)",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -351,7 +351,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd for Week (prior sd = 100)",i),
+      title = paste("Trend sd for Week (prior sd = 100)",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -369,7 +369,7 @@ for (i in 2:52) {
   plot = cowplot::plot_grid(plot1, plot2, plot3, plot4, nrow = 2)
   # Save the plot
   ggsave(
-    filename = paste0("plots_",i, ".png"), # Save as plot_1.png, plot_2.png, ...
+    filename = paste0("plots_ss",i, ".png"), # Save as plot_1.png, plot_2.png, ...
     plot = plot,                          # Specify the plot object
     width = 15, height = 15,                # Set width and height
     dpi = 300                             # High resolution

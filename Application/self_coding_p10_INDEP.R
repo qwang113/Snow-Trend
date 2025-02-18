@@ -21,6 +21,10 @@ y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 S <- nrow(y)
 TT <- ncol(y)
+sample_idx <- seq(from = 1005, to = 2000, by = 5)
+setwd("D:/77/Research/temp/snow_trend")
+theta <- readRDS("self_theta_INDEP.Rda")[,sample_idx]
+theta_s <- readRDS("self_theta_10_INDEP.Rda")[,sample_idx]
 
 
 period = 52

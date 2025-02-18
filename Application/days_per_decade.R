@@ -232,5 +232,87 @@ plot6 <- ggplot() +
 plot = cowplot::plot_grid(plot3,plot1, plot2, plot6, plot4, plot5, nrow = 2)
 plot
 
+diff_mean_indep_bym <- dpd_diff_mean_without_lat_alt - dpd_diff_mean_INDEP
+diff_sd_indep_bym <- (dpd_diff_sd_INDEP - dpd_diff_sd_lat_alt)/dpd_diff_sd_INDEP
+
+diff_mean_indep_bym_sf <- st_as_sf(data.frame(cbind(coords, diff_mean_indep_bym)), coords = c("LON", "LAT"), crs = 4326)
+diff_mean_indep_bym_sf  <- st_transform(diff_mean_indep_bym_sf , crs = aeqd_proj)
+
+diff_sd_indep_bym_sf <- st_as_sf(data.frame(cbind(coords, diff_sd_indep_bym)), coords = c("LON", "LAT"), crs = 4326)
+diff_sd_indep_bym_sf  <- st_transform(diff_sd_indep_bym_sf , crs = aeqd_proj)
+
+
+
+ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+  geom_sf(data = diff_mean_indep_bym_sf, aes(color = diff_mean_indep_bym_sf[[1]] ), size = 2, shape = 18) + # Data points with color mapped
+  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+  scale_color_gradient2(
+    low = "red",          # Color for negative values
+    mid = "white",  # Color for zero
+    high = "blue",         # Color for positive values
+    midpoint = 0,    # Set midpoint at zero
+    guide = "colourbar"
+  ) +
+  theme_minimal() +
+  labs(
+    title ="Different in Predicted Mean Snowy Days per Decade (Spatial Model - Independent Model) ",
+    color = ""
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  ) + 
+  guides(
+    color = guide_colorbar(
+      barwidth = 20,   # Adjust the width of the color bar
+      barheight = 0.5  # Adjust the height of the color bar
+    )
+  )
+
+
+ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+  geom_sf(data = diff_sd_indep_bym_sf, aes(color = diff_sd_indep_bym_sf[[1]] ), size = 2, shape = 18) + # Data points with color mapped
+  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+  scale_color_gradient2(
+    low = "red",          # Color for negative values
+    mid = "white",  # Color for zero
+    high = "blue",         # Color for positive values
+    midpoint = 0,    # Set midpoint at zero
+    guide = "colourbar"
+  ) +
+  theme_minimal() +
+  labs(
+    title ="Change in Relative SD",
+    color = ""
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  ) + 
+  guides(
+    color = guide_colorbar(
+      barwidth = 20,   # Adjust the width of the color bar
+      barheight = 0.5  # Adjust the height of the color bar
+    )
+  )
+
+
+data <- data.frame(
+  x = dpd_diff_sd_INDEP,
+  y = dpd_diff_sd_without_lat_alt
+)
+
+# Plot using ggplot2
+ggplot(data, aes(x = x, y = y)) +
+  geom_point() +  # Scatter plot
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red", linewidth = 2, alpha = 0.6) +  # y = x line
+  labs(x = "SD for Independent Model Trend Estimation", y = "SD for Spatial Model Trend Estimation",
+       title = "") +
+  theme_minimal()
+
 
 
