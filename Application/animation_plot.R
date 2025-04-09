@@ -77,7 +77,13 @@ equator_points <- data.frame(
 equator_sf <- st_as_sf(equator_points, coords = c("lon", "lat"), crs = 4326) 
 equator_aeqd <- st_transform(equator_sf, crs = aeqd_proj)
 
-wk_names <- substr(names(all_y[3:54]),2,5) 
+wk_names <- substr(names(all_y[3:54]),2,6) 
+wk_names <- sub("^([0-9]+\\.[0-9]+).*", "\\1", wk_names)
+
+month_raw <- substr(wk_names, 1, 2)
+month_num <- as.integer(gsub("\\.", "", month_raw))
+month_abbr <- month.abb[month_num]
+
 library(magick)
 # Trend Plot
 for (i in 2:52) {
@@ -152,9 +158,10 @@ for (i in 2:52) {
       title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[i]),
       color = ""
     ) +
+    annotate("text", x = -7000000, y = -1000000, label = month_abbr[i], size = 20) +
     theme(
       legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
+      plot.title = element_text(hjust = 0.5, size = 20)
     ) +
     guides(
       color = guide_colorbar(
@@ -162,7 +169,7 @@ for (i in 2:52) {
         barheight = 0.5
       )
     )
-  
+
   # plot4 <- ggplot() +
   #   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
   #   geom_sf(data = trend_aeqd_lat_alt, aes(color = trend_aeqd_lat_alt[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
@@ -243,142 +250,275 @@ for (i in 2:52) {
     filename = paste0("plot_",i, ".png"), # Save as plot_1.png, plot_2.png, ...
     plot = plot,                          # Specify the plot object
     width = 15, height = 15,                # Set width and height
-    dpi = 300                             # High resolution
+    dpi = 100                             # High resolution
   )
 }
 
-
+setwd("D:/77/Research/temp/snow_trend")
 png_files <- list.files(pattern = "plot_\\d+\\.png") 
 png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
 gif <- image_read(png_files)                       # Read images
 gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
 image_write(gif, "trend_animation.gif")            # Save the GIF
 
+special <- c( which(wk_names %in% c("11.27", "1.15","4.1","6.3")))
 
-
-
-
-# Sensitivity Analylsis
-
-library(magick)
-# Trend Plot
-for (i in 2:52) {
-  print(i)
-  # Create the plot
-  plot1 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd_lat_alt, aes(color = trend_aeqd_lat_alt[[i]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_gradient2(
-      low = "red",          # Color for negative values
-      mid = "white",  # Color for zero
-      high = "blue",         # Color for positive values
-      midpoint = 0,          # Set midpoint at zero
-      limits = range(c(diff_mean_lat_alt[,-1],diff_mean_lat_alt_prior_100[,-1] )), # Set the range of the legend
-      guide = "colourbar"
-    ) +
-    theme_minimal() +
-    labs(
-      title = paste("Trend Mean for Week (prior sd = 5)",wk_names[i]),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-    guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
+trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[1]]], 0.3), -0.3)
+p1 <- ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
+  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+  geom_sf(data = world_aeqd, fill = NA, color = "black") +
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
+  scale_color_gradient2(
+    low = "red",         
+    mid = "white",       
+    high = "blue",        
+    midpoint = 0,
+    limits = c(-0.3, 0.3),
+    guide = "colourbar"
+  ) +
+  theme_minimal() +
+  labs(
+    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[i]),
+    color = ""
+  ) +
+  annotate("text", x = -7000000, y = -1000000, label = month_abbr[i], size = 20) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  guides(
+    color = guide_colorbar(
+      barwidth = 20,
+      barheight = 0.5
     )
-  
-  plot2 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd_lat_alt, aes(color = trend_aeqd_lat_alt[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
-    theme_minimal() +
-    labs(
-      title = paste("Trend sd for Week (prior sd = 5)",wk_names[i]),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-    guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
-    )
-  plot3 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd_lat_alt_prior_100, aes(color = trend_aeqd_lat_alt_prior_100[[i]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_gradient2(
-      low = "red",          # Color for negative values
-      mid = "white",  # Color for zero
-      high = "blue",         # Color for positive values
-      midpoint = 0,          # Set midpoint at zero
-      limits = range(c(diff_mean_lat_alt[,-1],diff_mean_lat_alt_prior_100[,-1] )), # Set the range of the legend
-      guide = "colourbar"
-    ) +
-    theme_minimal() +
-    labs(
-      title = paste("Trend Mean for Week (prior sd = 100)",wk_names[i]),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-    guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
-    )
-  
-  plot4 <- ggplot() +
-    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-    geom_sf(data = trend_aeqd_lat_alt_prior_100, aes(color = trend_aeqd_lat_alt_prior_100[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
-    geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-    scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
-    theme_minimal() +
-    labs(
-      title = paste("Trend sd for Week (prior sd = 100)",wk_names[i]),
-      color = ""
-    ) +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5)
-    ) + 
-    guides(
-      color = guide_colorbar(
-        barwidth = 20,   # Adjust the width of the color bar
-        barheight = 0.5  # Adjust the height of the color bar
-      )
-    )
-  
-  
-  plot = cowplot::plot_grid(plot1, plot2, plot3, plot4, nrow = 2)
-  # Save the plot
-  ggsave(
-    filename = paste0("plots_ss",i, ".png"), # Save as plot_1.png, plot_2.png, ...
-    plot = plot,                          # Specify the plot object
-    width = 15, height = 15,                # Set width and height
-    dpi = 300                             # High resolution
   )
-} 
 
-png_files <- list.files(pattern = "plots_\\d+\\.png") 
-png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
-gif <- image_read(png_files)                       # Read images
-gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
-image_write(gif, "trend_animation_sensitivity.gif")            # Save the GIF
+
+trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[2]]], 0.3), -0.3)
+p2 <- ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
+  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+  geom_sf(data = world_aeqd, fill = NA, color = "black") +
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
+  scale_color_gradient2(
+    low = "red",         
+    mid = "white",       
+    high = "blue",        
+    midpoint = 0,
+    limits = c(-0.3, 0.3),
+    guide = "colourbar"
+  ) +
+  theme_minimal() +
+  labs(
+    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[2]]),
+    color = ""
+  ) +
+  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[2]], size = 20) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  guides(
+    color = guide_colorbar(
+      barwidth = 20,
+      barheight = 0.5
+    )
+  )
+
+trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[3]]], 0.3), -0.3)
+p3 <- ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
+  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+  geom_sf(data = world_aeqd, fill = NA, color = "black") +
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
+  scale_color_gradient2(
+    low = "red",         
+    mid = "white",       
+    high = "blue",        
+    midpoint = 0,
+    limits = c(-0.3, 0.3),
+    guide = "colourbar"
+  ) +
+  theme_minimal() +
+  labs(
+    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[3]]),
+    color = ""
+  ) +
+  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[3]], size = 20) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  guides(
+    color = guide_colorbar(
+      barwidth = 20,
+      barheight = 0.5
+    )
+  )
+
+
+trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[4]]], 0.3), -0.3)
+p4 <- ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
+  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+  geom_sf(data = world_aeqd, fill = NA, color = "black") +
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
+  scale_color_gradient2(
+    low = "red",         
+    mid = "white",       
+    high = "blue",        
+    midpoint = 0,
+    limits = c(-0.3, 0.3),
+    guide = "colourbar"
+  ) +
+  theme_minimal() +
+  labs(
+    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[4]]),
+    color = ""
+  ) +
+  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[4]], size = 20) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  guides(
+    color = guide_colorbar(
+      barwidth = 20,
+      barheight = 0.5
+    )
+  )
+
+
+cowplot::plot_grid(p1,p2, nrow = 1)
+
+cowplot::plot_grid(p3,p4, nrow = 1)
+
+
+# # Sensitivity Analylsis
+# 
+# library(magick)
+# # Trend Plot
+# for (i in 2:52) {
+#   print(i)
+#   # Create the plot
+#   plot1 <- ggplot() +
+#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+#     geom_sf(data = trend_aeqd_lat_alt, aes(color = trend_aeqd_lat_alt[[i]] ), size = 2, shape = 18) + # Data points with color mapped
+#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+#     scale_color_gradient2(
+#       low = "red",          # Color for negative values
+#       mid = "white",  # Color for zero
+#       high = "blue",         # Color for positive values
+#       midpoint = 0,          # Set midpoint at zero
+#       limits = range(c(diff_mean_lat_alt[,-1],diff_mean_lat_alt_prior_100[,-1] )), # Set the range of the legend
+#       guide = "colourbar"
+#     ) +
+#     theme_minimal() +
+#     labs(
+#       title = paste("Trend Mean for Week (prior sd = 5)",wk_names[i]),
+#       color = ""
+#     ) +
+#     theme(
+#       legend.position = "bottom",
+#       plot.title = element_text(hjust = 0.5)
+#     ) + 
+#     guides(
+#       color = guide_colorbar(
+#         barwidth = 20,   # Adjust the width of the color bar
+#         barheight = 0.5  # Adjust the height of the color bar
+#       )
+#     )
+#   
+#   plot2 <- ggplot() +
+#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+#     geom_sf(data = trend_aeqd_lat_alt, aes(color = trend_aeqd_lat_alt[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
+#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+#     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
+#     theme_minimal() +
+#     labs(
+#       title = paste("Trend sd for Week (prior sd = 5)",wk_names[i]),
+#       color = ""
+#     ) +
+#     theme(
+#       legend.position = "bottom",
+#       plot.title = element_text(hjust = 0.5)
+#     ) + 
+#     guides(
+#       color = guide_colorbar(
+#         barwidth = 20,   # Adjust the width of the color bar
+#         barheight = 0.5  # Adjust the height of the color bar
+#       )
+#     )
+#   plot3 <- ggplot() +
+#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+#     geom_sf(data = trend_aeqd_lat_alt_prior_100, aes(color = trend_aeqd_lat_alt_prior_100[[i]] ), size = 2, shape = 18) + # Data points with color mapped
+#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+#     scale_color_gradient2(
+#       low = "red",          # Color for negative values
+#       mid = "white",  # Color for zero
+#       high = "blue",         # Color for positive values
+#       midpoint = 0,          # Set midpoint at zero
+#       limits = range(c(diff_mean_lat_alt[,-1],diff_mean_lat_alt_prior_100[,-1] )), # Set the range of the legend
+#       guide = "colourbar"
+#     ) +
+#     theme_minimal() +
+#     labs(
+#       title = paste("Trend Mean for Week (prior sd = 100)",wk_names[i]),
+#       color = ""
+#     ) +
+#     theme(
+#       legend.position = "bottom",
+#       plot.title = element_text(hjust = 0.5)
+#     ) + 
+#     guides(
+#       color = guide_colorbar(
+#         barwidth = 20,   # Adjust the width of the color bar
+#         barheight = 0.5  # Adjust the height of the color bar
+#       )
+#     )
+#   
+#   plot4 <- ggplot() +
+#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+#     geom_sf(data = trend_aeqd_lat_alt_prior_100, aes(color = trend_aeqd_lat_alt_prior_100[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
+#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+#     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
+#     theme_minimal() +
+#     labs(
+#       title = paste("Trend sd for Week (prior sd = 100)",wk_names[i]),
+#       color = ""
+#     ) +
+#     theme(
+#       legend.position = "bottom",
+#       plot.title = element_text(hjust = 0.5)
+#     ) + 
+#     guides(
+#       color = guide_colorbar(
+#         barwidth = 20,   # Adjust the width of the color bar
+#         barheight = 0.5  # Adjust the height of the color bar
+#       )
+#     )
+#   
+#   
+#   plot = cowplot::plot_grid(plot1, plot2, plot3, plot4, nrow = 2)
+#   # Save the plot
+#   ggsave(
+#     filename = paste0("plots_ss",i, ".png"), # Save as plot_1.png, plot_2.png, ...
+#     plot = plot,                          # Specify the plot object
+#     width = 15, height = 15,                # Set width and height
+#     dpi = 100                             # High resolution
+#   )
+# } 
+# setwd("D:/77/Research/temp/snow_trend")
+# png_files <- list.files(pattern = "plots_\\d+\\.png") 
+# png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
+# gif <- image_read(png_files)                       # Read images
+# gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
+# image_write(gif, "trend_animation_sensitivity.gif")            # Save the GIF
+
+
+
