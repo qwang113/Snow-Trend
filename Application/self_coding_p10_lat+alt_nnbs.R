@@ -24,6 +24,10 @@ S <- nrow(y)
 TT <- ncol(y)
 setwd(here::here())
 
+elev <- read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,-1]
+lats <- coords[,2]
+
+
 
 period = 52
 
@@ -51,31 +55,48 @@ for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-
+  
   # Extract the relevant rows from location_idx and covariates
   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-
+  
   # Apply the outer product to each pair of rows in the chunk
   # mapply to compute the outer product for each pair of rows
   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
                          split(loc_chunk, row(loc_chunk)),
                          split(cov_chunk, row(cov_chunk)))
-
+  
   # Reshape result to match design matrix row structure
   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-
+  
   # Convert result matrix to a sparse Matrix format and store in design_mat
   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 }
 # 
-saveRDS(design_mat,"design_mat_10_INDEP_nnbs.Rda")
+
+
+lats_design <- lats[row_idx]
+elev_design <- elev[row_idx,3]
+
+other_covariates <- Matrix(
+  cbind(lats_design, 
+        lats_design*cos(2*pi*location_time_0[,2]/period),
+        lats_design*sin(2*pi*location_time_0[,2]/period),
+        lats_design*location_time_0[,2],
+        elev_design,
+        elev_design*cos(2*pi*location_time_0[,2]/period),
+        elev_design*sin(2*pi*location_time_0[,2]/period),
+        elev_design*location_time_0[,2]), sparse = TRUE )
+
+design_mat <- cbind(design_mat, other_covariates)
+
+
 # design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_10_INDEP.Rda")
 tot_samples <- 2000
 
-all_theta <- matrix(NA, nrow = 4*S, ncol = tot_samples)
+all_theta <- matrix(NA, nrow = 4*S + 8, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 4, ncol = tot_samples)
-curr_theta_vec <- matrix(0, nrow = 1, ncol = 4*S)
+curr_theta_vec <- matrix(0, nrow = 1, ncol = 4*S+ 8)
 curr_tau_vec <- rep(1,4)
 a_tau <- 0.001
 b_tau <- 0.001
@@ -96,7 +117,8 @@ while(save_idx < tot_samples) {
     1/25*diag(1,S),
     1/25*diag(1,S),
     1/25*diag(1,S),
-    1/1*diag(1,S)
+    1/1*diag(1,S),
+    1/10000*diag(1,8)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -113,7 +135,7 @@ while(save_idx < tot_samples) {
   }
 }
 
-saveRDS(all_theta, "self_theta_10_INDEP_nnbs.Rda")
+saveRDS(all_theta, "self_theta_10_lat+alt_nnbs.Rda")
 
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))

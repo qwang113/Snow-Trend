@@ -16,7 +16,7 @@ library(pbapply)
 library(sparseMVN) 
 setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
+all_y <- readRDS("snow_cleaned.Rda")[no_nbs,]
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 
@@ -67,33 +67,33 @@ cbind(1,1,
       location_time_0[,2], location_time_0[,2]), sparse = TRUE )
 
 # # Loop through chunks of rows
-# chunk_size <- 10
-# curr_row <- 1
-# for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
-#   print(start_row)
-#   # Define the end row for the current chunk
-#   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-# 
-#   # Extract the relevant rows from location_idx and covariates
-#   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
-#   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-# 
-#   # Apply the outer product to each pair of rows in the chunk
-#   # mapply to compute the outer product for each pair of rows
-#   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
-#                          split(loc_chunk, row(loc_chunk)),
-#                          split(cov_chunk, row(cov_chunk)))
-# 
-#   # Reshape result to match design matrix row structure
-#   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-# 
-#   # Convert result matrix to a sparse Matrix format and store in design_mat
-#   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
-# }
-# 
+ chunk_size <- 10
+ curr_row <- 1
+for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
+  print(start_row)
+  # Define the end row for the current chunk
+  end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
+
+  # Extract the relevant rows from location_idx and covariates
+  loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
+  cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
+
+  # Apply the outer product to each pair of rows in the chunk
+  # mapply to compute the outer product for each pair of rows
+  result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
+                         split(loc_chunk, row(loc_chunk)),
+                         split(cov_chunk, row(cov_chunk)))
+
+  # Reshape result to match design matrix row structure
+  result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
+
+  # Convert result matrix to a sparse Matrix format and store in design_mat
+  design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
+}
+
 # saveRDS(design_mat,"design_mat_01.Rda")
-design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01.Rda")
-tot_samples <- 10000
+# design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01.Rda")
+tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 8*S, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
@@ -163,8 +163,8 @@ theta_22 <- theta_mean[(5*S+1):(6*S)]
 theta_a1 <- theta_mean[(6*S+1):(7*S)]
 theta_a2 <- theta_mean[(7*S+1):(8*S)]
 
-saveRDS(all_theta, "self_theta.Rda")
-saveRDS(all_tau, "self_tau.Rda")
+saveRDS(all_theta, "self_theta_01_nnbs.Rda")
+saveRDS(all_tau, "self_tau_01_nnbs.Rda")
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))
 # theta_01_stan <- apply(samples$theta_01, 2, mean)

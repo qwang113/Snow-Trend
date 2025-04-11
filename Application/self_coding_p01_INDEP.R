@@ -16,7 +16,8 @@ library(pbapply)
 library(sparseMVN) 
 setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
+# all_y <- readRDS("snow_cleaned.Rda")
+all_y <- readRDS("snow_cleaned.Rda")[no_nbs,]
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 S <- nrow(y)
@@ -64,8 +65,8 @@ for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 }
 # 
-saveRDS(design_mat,"design_mat_01_INDEP.Rda")
-# design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01_INDEP.Rda")
+saveRDS(design_mat,"design_mat_01_INDEP_nnbs.Rda")
+# design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_01_INDEP_full.Rda")
 tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 4*S, ncol = tot_samples)
@@ -109,7 +110,7 @@ while(save_idx < tot_samples) {
   }
 }
 
-saveRDS(all_theta, "self_theta_01_INDEP.Rda")
+saveRDS(all_theta, "self_theta_01_INDEP_nnbs.Rda")
 # Compare with stan
 # samples <- readRDS(here::here("test_app_samples.Rda"))
 # theta_01_stan <- apply(samples$theta_01, 2, mean)

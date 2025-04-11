@@ -11,17 +11,35 @@ no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 
 all_y <- readRDS(here::here("snow_cleaned.Rda"))[-no_nbs,]
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
-
+coords_nnbs <- readRDS(here::here("snow_cleaned.Rda"))[no_nbs,1:2]
+coords <- rbind(coords, coords_nnbs)
 # First year
 setwd("D:/77/Research/temp/snow_trend")
 weekly_ini_without_lat_alt <- readRDS("weekly_ini_without_lat+out.Rda")
+weekly_ini_without_lat_alt_nnbs <- readRDS("weekly_ini_without_lat+out_nnbs.Rda")
+weekly_ini_without_lat_alt <- abind(weekly_ini_without_lat_alt, weekly_ini_without_lat_alt_nnbs, along = 2)
+
+
 weekly_final_without_lat_alt <- readRDS("weekly_final_without_lat+out.Rda")
+weekly_final_without_lat_alt_nnbs <- readRDS("weekly_final_without_lat+out_nnbs.Rda")
+weekly_final_without_lat_alt <- abind(weekly_final_without_lat_alt , weekly_final_without_lat_alt_nnbs, along = 2)
+
 weekly_ini_lat_alt <- readRDS("weekly_ini_with_lat+out.Rda")
+weekly_ini_lat_alt_nnbs <- readRDS("weekly_ini_with_lat+out_nnbs.Rda")
+weekly_ini_lat_alt <- abind(weekly_ini_lat_alt, weekly_ini_lat_alt_nnbs, along = 2)
+
 weekly_final_lat_alt <- readRDS("weekly_final_with_lat+out.Rda")
+weekly_final_lat_alt_nnbs <- readRDS("weekly_final_with_lat+out_nnbs.Rda")
+weekly_final_lat_alt <- abind(weekly_final_lat_alt, weekly_final_lat_alt_nnbs, along = 2)
+
 weekly_ini_INDEP <- readRDS("weekly_ini_INDEP.Rda")
+weekly_ini_INDEP_nnbs <- readRDS("weekly_ini_INDEP_nnbs.Rda")
+weekly_ini_INDEP <- abind(weekly_ini_INDEP , weekly_ini_INDEP_nnbs, along = 2)
+
 weekly_final_INDEP <- readRDS("weekly_final_INDEP.Rda")
-weekly_ini_lat_alt_prior_100 <- readRDS("weekly_ini_with_lat+out_prior_100.Rda")
-weekly_final_lat_alt_prior_100 <- readRDS("weekly_final_with_lat+out_prior_100.Rda")
+weekly_final_INDEP_nnbs <- readRDS("weekly_final_INDEP_nnbs.Rda")
+weekly_final_INDEP <- abind(weekly_final_INDEP, weekly_final_INDEP_nnbs, along=2)
+
 
 
 p_snow_diff <- weekly_final_without_lat_alt[,,,2] - weekly_ini_without_lat_alt[,,,2]
@@ -36,9 +54,9 @@ p_snow_diff <- weekly_final_INDEP[,,,2] - weekly_ini_INDEP[,,,2]
 diff_mean_INDEP <- apply(p_snow_diff,c(2,3),mean)
 diff_sd_INDEP <- apply(p_snow_diff,c(2,3),sd)
 
-p_snow_diff <- weekly_final_lat_alt_prior_100[,,,2] - weekly_ini_lat_alt_prior_100[,,,2]
-diff_mean_lat_alt_prior_100 <- apply(p_snow_diff,c(2,3),mean)
-diff_sd_lat_alt_prior_100 <- apply(p_snow_diff,c(2,3),sd)
+# p_snow_diff <- weekly_final_lat_alt_prior_100[,,,2] - weekly_ini_lat_alt_prior_100[,,,2]
+# diff_mean_lat_alt_prior_100 <- apply(p_snow_diff,c(2,3),mean)
+# diff_sd_lat_alt_prior_100 <- apply(p_snow_diff,c(2,3),sd)
 
 
 
@@ -61,8 +79,8 @@ trend_data_INDEP <- st_as_sf(data.frame(cbind(coords, diff_mean_INDEP, diff_sd_I
 trend_aeqd_INDEP <- st_transform(trend_data_INDEP, crs = aeqd_proj)
 
 
-trend_data_lat_alt_prior_100 <- st_as_sf(data.frame(cbind(coords, diff_mean_lat_alt_prior_100, diff_sd_lat_alt_prior_100)), coords = c("LON", "LAT"), crs = 4326)
-trend_aeqd_lat_alt_prior_100 <- st_transform(trend_data_lat_alt_prior_100, crs = aeqd_proj)
+# trend_data_lat_alt_prior_100 <- st_as_sf(data.frame(cbind(coords, diff_mean_lat_alt_prior_100, diff_sd_lat_alt_prior_100)), coords = c("LON", "LAT"), crs = 4326)
+# trend_aeqd_lat_alt_prior_100 <- st_transform(trend_data_lat_alt_prior_100, crs = aeqd_proj)
 
 
 world_aeqd <- st_transform(world_north, crs = aeqd_proj)
@@ -279,10 +297,10 @@ p1 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[i]),
+    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[1]]),
     color = ""
   ) +
-  annotate("text", x = -7000000, y = -1000000, label = month_abbr[i], size = 20) +
+  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[1]], size = 20) +
   theme(
     legend.position = "bottom",
     plot.title = element_text(hjust = 0.5)

@@ -7,21 +7,42 @@ library(rnaturalearth)
 library(RColorBrewer)
 library(spBayes)
 library(elevatr)
+library(abind)
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
 all_y <- readRDS(here::here("snow_cleaned.Rda"))[-no_nbs,]
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
-
+coords_nnbs <- readRDS(here::here("snow_cleaned.Rda"))[no_nbs,1:2]
+coords <- rbind(coords, coords_nnbs)
 # First year
 setwd("D:/77/Research/temp/snow_trend")
 weekly_ini_without_lat_alt <- readRDS("weekly_ini_without_lat+out.Rda")
+weekly_ini_without_lat_alt_nnbs <- readRDS("weekly_ini_without_lat+out_nnbs.Rda")
+weekly_ini_without_lat_alt <- abind(weekly_ini_without_lat_alt, weekly_ini_without_lat_alt_nnbs, along = 2)
+
+
 weekly_final_without_lat_alt <- readRDS("weekly_final_without_lat+out.Rda")
+weekly_final_without_lat_alt_nnbs <- readRDS("weekly_final_without_lat+out_nnbs.Rda")
+weekly_final_without_lat_alt <- abind(weekly_final_without_lat_alt , weekly_final_without_lat_alt_nnbs, along = 2)
+
 weekly_ini_lat_alt <- readRDS("weekly_ini_with_lat+out.Rda")
+weekly_ini_lat_alt_nnbs <- readRDS("weekly_ini_with_lat+out_nnbs.Rda")
+weekly_ini_lat_alt <- abind(weekly_ini_lat_alt, weekly_ini_lat_alt_nnbs, along = 2)
+
 weekly_final_lat_alt <- readRDS("weekly_final_with_lat+out.Rda")
+weekly_final_lat_alt_nnbs <- readRDS("weekly_final_with_lat+out_nnbs.Rda")
+weekly_final_lat_alt <- abind(weekly_final_lat_alt, weekly_final_lat_alt_nnbs, along = 2)
+
 weekly_ini_INDEP <- readRDS("weekly_ini_INDEP.Rda")
+weekly_ini_INDEP_nnbs <- readRDS("weekly_ini_INDEP_nnbs.Rda")
+weekly_ini_INDEP <- abind(weekly_ini_INDEP , weekly_ini_INDEP_nnbs, along = 2)
+
 weekly_final_INDEP <- readRDS("weekly_final_INDEP.Rda")
-weekly_ini_lat_alt_prior_100 <- readRDS("weekly_ini_with_lat+out_prior_100.Rda")
-weekly_final_lat_alt_prior_100 <- readRDS("weekly_final_with_lat+out_prior_100.Rda")
+weekly_final_INDEP_nnbs <- readRDS("weekly_final_INDEP_nnbs.Rda")
+weekly_final_INDEP <- abind(weekly_final_INDEP, weekly_final_INDEP_nnbs, along=2)
+
+# weekly_ini_lat_alt_prior_100 <- readRDS("weekly_ini_with_lat+out_prior_100.Rda")
+# weekly_final_lat_alt_prior_100 <- readRDS("weekly_final_with_lat+out_prior_100.Rda")
 
 dpd_snow_diff <- (apply(weekly_final_without_lat_alt[,,,2],c(1,2),sum) - apply(weekly_ini_without_lat_alt[,,,2], c(1,2),sum))/53
 dpd_diff_mean_without_lat_alt <- apply(dpd_snow_diff,2,mean)
@@ -168,10 +189,8 @@ plot4 <- ggplot() +
   geom_sf(data = dpd_aeqd_without_lat_alt, aes(color = log(dpd_aeqd_without_lat_alt[[2]]) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_gradientn(
-    colors = terrain.colors(100),
-    limits = rg_sd
-  )+
+  scale_color_viridis_c(option = "C", direction = 1, limits = c(-5,-2.5))+
+
   theme_minimal() +
   labs(
     title ="Aggregated Trend log of SD - SP",
@@ -194,10 +213,8 @@ plot5 <- ggplot() +
   geom_sf(data = dpd_aeqd_lat_alt, aes(color = log(dpd_aeqd_lat_alt[[2]]) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_gradientn(
-    colors = terrain.colors(100),
-    limits = rg_sd
-  )+
+  scale_color_viridis_c(option = "C", direction = 1, limits = c(-5,-2.5))+
+
   theme_minimal() +
   labs(
     title ="Aggregated Trend log of SD - SP + Covariates",
@@ -220,10 +237,7 @@ plot6 <- ggplot() +
   geom_sf(data = dpd_aeqd_INDEP, aes(color = log(dpd_aeqd_INDEP[[2]]) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_gradientn(
-    colors = terrain.colors(100),
-    limits = rg_sd
-  )+
+  scale_color_viridis_c(option = "C", direction = 1, limits = c(-5,-2.5)) +
   theme_minimal() +
   labs(
     title ="Aggregated Trend log of SD - IND",
@@ -241,91 +255,92 @@ plot6 <- ggplot() +
   )
 
 plot = cowplot::plot_grid(plot3,plot1, plot2, plot6, plot4, plot5, nrow = 2)
-#plot = cowplot::plot_grid(plot3, plot1, plot2, nrow = 1)
+
+plot = cowplot::plot_grid(plot3, plot1, plot2, nrow = 1)
 plot = cowplot::plot_grid(plot6, plot4, plot5, nrow = 1)
 plot
 
-diff_mean_indep_bym <- dpd_diff_mean_without_lat_alt - dpd_diff_mean_INDEP
-diff_sd_indep_bym <- (dpd_diff_sd_INDEP - dpd_diff_sd_lat_alt)/dpd_diff_sd_INDEP
-
-diff_mean_indep_bym_sf <- st_as_sf(data.frame(cbind(coords, diff_mean_indep_bym)), coords = c("LON", "LAT"), crs = 4326)
-diff_mean_indep_bym_sf  <- st_transform(diff_mean_indep_bym_sf , crs = aeqd_proj)
-
-diff_sd_indep_bym_sf <- st_as_sf(data.frame(cbind(coords, diff_sd_indep_bym)), coords = c("LON", "LAT"), crs = 4326)
-diff_sd_indep_bym_sf  <- st_transform(diff_sd_indep_bym_sf , crs = aeqd_proj)
-
-
-
-ggplot() +
-  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-  geom_sf(data = diff_mean_indep_bym_sf, aes(color = diff_mean_indep_bym_sf[[1]] ), size = 2, shape = 18) + # Data points with color mapped
-  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_gradient2(
-    low = "red",          # Color for negative values
-    mid = "white",  # Color for zero
-    high = "blue",         # Color for positive values
-    midpoint = 0,    # Set midpoint at zero
-    guide = "colourbar"
-  ) +
-  theme_minimal() +
-  labs(
-    title ="Different in Predicted Mean Snowy Days per Decade (Spatial Model - Independent Model) ",
-    color = ""
-  ) +
-  theme(
-    legend.position = "bottom",
-    plot.title = element_text(hjust = 0.5)
-  ) + 
-  guides(
-    color = guide_colorbar(
-      barwidth = 20,   # Adjust the width of the color bar
-      barheight = 0.5  # Adjust the height of the color bar
-    )
-  )
-
-
-ggplot() +
-  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-  geom_sf(data = diff_sd_indep_bym_sf, aes(color = diff_sd_indep_bym_sf[[1]] ), size = 2, shape = 18) + # Data points with color mapped
-  geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_gradient2(
-    low = "red",          # Color for negative values
-    mid = "white",  # Color for zero
-    high = "blue",         # Color for positive values
-    midpoint = 0,    # Set midpoint at zero
-    guide = "colourbar"
-  ) +
-  theme_minimal() +
-  labs(
-    title ="Change in Relative SD",
-    color = ""
-  ) +
-  theme(
-    legend.position = "bottom",
-    plot.title = element_text(hjust = 0.5)
-  ) + 
-  guides(
-    color = guide_colorbar(
-      barwidth = 20,   # Adjust the width of the color bar
-      barheight = 0.5  # Adjust the height of the color bar
-    )
-  )
-
-
-data <- data.frame(
-  x = dpd_diff_sd_INDEP,
-  y = dpd_diff_sd_without_lat_alt
-)
-
-# Plot using ggplot2
-ggplot(data, aes(x = x, y = y)) +
-  geom_point() +  # Scatter plot
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red", linewidth = 2, alpha = 0.6) +  # y = x line
-  labs(x = "SD for Independent Model Trend Estimation", y = "SD for Spatial Model Trend Estimation",
-       title = "") +
-  theme_minimal()
+# diff_mean_indep_bym <- dpd_diff_mean_without_lat_alt - dpd_diff_mean_INDEP
+# diff_sd_indep_bym <- (dpd_diff_sd_INDEP - dpd_diff_sd_lat_alt)/dpd_diff_sd_INDEP
+# 
+# diff_mean_indep_bym_sf <- st_as_sf(data.frame(cbind(coords, diff_mean_indep_bym)), coords = c("LON", "LAT"), crs = 4326)
+# diff_mean_indep_bym_sf  <- st_transform(diff_mean_indep_bym_sf , crs = aeqd_proj)
+# 
+# diff_sd_indep_bym_sf <- st_as_sf(data.frame(cbind(coords, diff_sd_indep_bym)), coords = c("LON", "LAT"), crs = 4326)
+# diff_sd_indep_bym_sf  <- st_transform(diff_sd_indep_bym_sf , crs = aeqd_proj)
+# 
+# 
+# 
+# ggplot() +
+#   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+#   geom_sf(data = diff_mean_indep_bym_sf, aes(color = diff_mean_indep_bym_sf[[1]] ), size = 2, shape = 18) + # Data points with color mapped
+#   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+#   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+#   scale_color_gradient2(
+#     low = "red",          # Color for negative values
+#     mid = "white",  # Color for zero
+#     high = "blue",         # Color for positive values
+#     midpoint = 0,    # Set midpoint at zero
+#     guide = "colourbar"
+#   ) +
+#   theme_minimal() +
+#   labs(
+#     title ="Different in Predicted Mean Snowy Days per Decade (Spatial Model - Independent Model) ",
+#     color = ""
+#   ) +
+#   theme(
+#     legend.position = "bottom",
+#     plot.title = element_text(hjust = 0.5)
+#   ) + 
+#   guides(
+#     color = guide_colorbar(
+#       barwidth = 20,   # Adjust the width of the color bar
+#       barheight = 0.5  # Adjust the height of the color bar
+#     )
+#   )
+# 
+# 
+# ggplot() +
+#   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
+#   geom_sf(data = diff_sd_indep_bym_sf, aes(color = diff_sd_indep_bym_sf[[1]] ), size = 2, shape = 18) + # Data points with color mapped
+#   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
+#   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
+#   scale_color_gradient2(
+#     low = "red",          # Color for negative values
+#     mid = "white",  # Color for zero
+#     high = "blue",         # Color for positive values
+#     midpoint = 0,    # Set midpoint at zero
+#     guide = "colourbar"
+#   ) +
+#   theme_minimal() +
+#   labs(
+#     title ="Change in Relative SD",
+#     color = ""
+#   ) +
+#   theme(
+#     legend.position = "bottom",
+#     plot.title = element_text(hjust = 0.5)
+#   ) + 
+#   guides(
+#     color = guide_colorbar(
+#       barwidth = 20,   # Adjust the width of the color bar
+#       barheight = 0.5  # Adjust the height of the color bar
+#     )
+#   )
+# 
+# 
+# data <- data.frame(
+#   x = dpd_diff_sd_INDEP,
+#   y = dpd_diff_sd_without_lat_alt
+# )
+# 
+# # Plot using ggplot2
+# ggplot(data, aes(x = x, y = y)) +
+#   geom_point() +  # Scatter plot
+#   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red", linewidth = 2, alpha = 0.6) +  # y = x line
+#   labs(x = "SD for Independent Model Trend Estimation", y = "SD for Spatial Model Trend Estimation",
+#        title = "") +
+#   theme_minimal()
 
 
 
