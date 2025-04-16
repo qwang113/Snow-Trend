@@ -46,8 +46,8 @@ covariates <- Matrix(
 
 # # Loop through chunks of rows
 
-chunk_size <- 1000
-start_row = 1
+chunk_size <- 10
+start_row = 588001
 curr_row = 1
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
