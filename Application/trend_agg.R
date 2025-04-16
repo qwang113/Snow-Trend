@@ -342,5 +342,38 @@ plot
 #        title = "") +
 #   theme_minimal()
 
+# Tables
+tb <-
+t(
+  cbind(
+c(table(dpd_diff_mean_INDEP < 0),
+  round(mean(dpd_diff_mean_INDEP),4),
+  round(median(dpd_diff_mean_INDEP),4), 
+  round(mean(dpd_diff_sd_INDEP),4), 
+  round(mean(dpd_diff_mean_INDEP/dpd_diff_sd_INDEP),4),
+  length(which(dpd_diff_mean_INDEP/dpd_diff_sd_INDEP>2)),
+  length(which(dpd_diff_mean_INDEP/dpd_diff_sd_INDEP < -2))
+),
 
+c(table(dpd_diff_mean_without_lat_alt < 0),
+  round(mean(dpd_diff_mean_without_lat_alt),4),
+  round(median(dpd_diff_mean_without_lat_alt),4),
+  round(mean(dpd_diff_sd_without_lat_alt),4),
+  round(mean(dpd_diff_mean_without_lat_alt/dpd_diff_sd_without_lat_alt),4),
+  length(which(dpd_diff_mean_without_lat_alt/dpd_diff_sd_without_lat_alt > 2)),
+  length(which(dpd_diff_mean_without_lat_alt/dpd_diff_sd_without_lat_alt < -2))
+),
 
+c(table(dpd_diff_mean_lat_alt < 0),
+  round(mean(dpd_diff_mean_lat_alt),4),
+  round(median(dpd_diff_mean_lat_alt),4),
+  round(mean(dpd_diff_sd_lat_alt),4),
+  round(mean(dpd_diff_mean_lat_alt/dpd_diff_sd_lat_alt),4),
+  length(which(dpd_diff_mean_lat_alt/dpd_diff_sd_lat_alt>2)),
+  length(which(dpd_diff_mean_lat_alt/dpd_diff_sd_lat_alt < -2))
+  )
+))
+
+colnames(tb) <- c("Increase","Decrease","Mean","Median","SD","Z-Score Mean","z>2","z<-2")
+rownames(tb) <- c("IND","BYM","BYM+")
+knitr::kable(tb, align = 'c', format = "latex")
