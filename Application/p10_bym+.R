@@ -16,12 +16,17 @@ library(future.apply)
 library(pbapply)
 setwd(here::here())
 library(sparseMVN) 
+
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
 all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
-y <- all_y[,-c(1,2)]
-coords <- all_y[,1:2]
+all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
+coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
 elev <- read.csv(here::here("curr_elev.csv"))
+elev_nnbs <- read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,-5]
+colnames(elev_nnbs) <- colnames(elev)
+elev <- rbind(elev, elev_nnbs)
 lats <- coords[,2]
 
 
@@ -63,45 +68,42 @@ row_idx <- location_time_0[,1]
 next_y <- abs(y[cbind(location_time_0[,1], location_time_0[,2]+1)] - 1)
 design_mat <- Matrix(0, nrow = length(next_y), ncol = 8*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
-# 
-# # pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
-# covariates <- Matrix(
-#   cbind(1,1,
-#         cos(2*pi*location_time_0[,2]/period),
-#         cos(2*pi*location_time_0[,2]/period),
-#         sin(2*pi*location_time_0[,2]/period), 
-#         sin(2*pi*location_time_0[,2]/period), 
-#         location_time_0[,2], location_time_0[,2]), sparse = TRUE )
-# 
-# 
-# # # Loop through chunks of rows
-# chunk_size <- 10
-# # # 2470001
-# curr_row <- start_row <- 1
-# for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
-#   print(start_row)
-#   # Define the end row for the current chunk
-#   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-# 
-#   # Extract the relevant rows from location_idx and covariates
-#   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
-#   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-# 
-#   # Apply the outer product to each pair of rows in the chunk
-#   # mapply to compute the outer product for each pair of rows
-#   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
-#                          split(loc_chunk, row(loc_chunk)),
-#                          split(cov_chunk, row(cov_chunk)))
-# 
-#   # Reshape result to match design matrix row structure
-#   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-# 
-#   # Convert result matrix to a sparse Matrix format and store in design_mat
-#   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
-# }
-# 
-# saveRDS(design_mat,"design_mat_10.Rda")
-design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_10.Rda")
+
+covariates <- Matrix(
+  cbind(1,1,
+        cos(2*pi*location_time_0[,2]/period),
+        cos(2*pi*location_time_0[,2]/period),
+        sin(2*pi*location_time_0[,2]/period), 
+        sin(2*pi*location_time_0[,2]/period), 
+        location_time_0[,2], location_time_0[,2]), sparse = TRUE )
+
+# Loop through chunks of rows
+chunk_size <- 10
+curr_row <- 1
+for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
+  print(start_row)
+  # Define the end row for the current chunk
+  end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
+  
+  # Extract the relevant rows from location_idx and covariates
+  loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
+  cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
+  
+  # Apply the outer product to each pair of rows in the chunk
+  # mapply to compute the outer product for each pair of rows
+  result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
+                         split(loc_chunk, row(loc_chunk)),
+                         split(cov_chunk, row(cov_chunk)))
+  
+  # Reshape result to match design matrix row structure
+  result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
+  
+  # Convert result matrix to a sparse Matrix format and store in design_mat
+  design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
+}
+setwd("D:/77/Research/temp/snow/")
+saveRDS(design_mat,"design10.Rda")
+design_mat <- readRDS("design10.Rda")
 
 lats_design <- lats[row_idx]
 elev_design <- elev[row_idx,3]
@@ -194,26 +196,5 @@ theta_22 <- theta_mean[(5*S+1):(6*S)]
 theta_a1 <- theta_mean[(6*S+1):(7*S)]
 theta_a2 <- theta_mean[(7*S+1):(8*S)]
 
-saveRDS(all_theta, "self_theta_10_lat+alt_prior_100.Rda")
-saveRDS(all_tau, "self_tau_10_lat+alt_prior_100.Rda")
-# Compare with stan
-# samples <- readRDS(here::here("test_app_samples.Rda"))
-# theta_01_stan <- apply(samples$theta_01, 2, mean)
-# theta_02_stan <- apply(samples$theta_02, 2, mean)
-# theta_11_stan <- apply(samples$theta_11, 2, mean)
-# theta_12_stan <- apply(samples$theta_12, 2, mean)
-# theta_21_stan <- apply(samples$theta_21, 2, mean)
-# theta_22_stan <- apply(samples$theta_22, 2, mean)
-# theta_a1_stan <- apply(samples$theta_a1, 2, mean)
-# theta_a2_stan <- apply(samples$theta_a2, 2, mean)
-# 
-# par(mfrow = c(4,2))
-# boxplot(cbind(theta_01, theta_01_stan))
-# boxplot(cbind(theta_02, theta_02_stan))
-# boxplot(cbind(theta_11, theta_11_stan))
-# boxplot(cbind(theta_12, theta_12_stan))
-# boxplot(cbind(theta_21, theta_21_stan))
-# boxplot(cbind(theta_22, theta_22_stan))
-# boxplot(cbind(theta_a1, theta_a1_stan))
-# boxplot(cbind(theta_a2, theta_a2_stan))
-
+saveRDS(all_theta, "theta10_bym+.Rda.Rda")
+saveRDS(all_tau, "tau10_bym+.Rda.Rda")

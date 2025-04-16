@@ -15,22 +15,22 @@ library(future.apply)
 library(pbapply)
 library(sparseMVN) 
 setwd(here::here())
+
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS("snow_cleaned.Rda")[no_nbs,]
-# all_y <- readRDS("snow_cleaned.Rda")
-y <- all_y[,-c(1,2)]
-coords <- all_y[,1:2]
+all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
+all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
+coords <- rbind(all_y, all_y_nnbs)[,1:2]
+
 S <- nrow(y)
 TT <- ncol(y)
-setwd(here::here())
 
 
 period = 52
 
-location_time_0 <- which(y[,-ncol(y)]==1, arr.ind =  TRUE)
+location_time_0 <- which(y[,-ncol(y)]==0, arr.ind =  TRUE)
 row_idx <- location_time_0[,1]
-next_y <- abs(y[cbind(location_time_0[,1], location_time_0[,2]+1)] - 1)
-
+next_y <- y[cbind(location_time_0[,1], location_time_0[,2]+1)]
 
 design_mat <- Matrix(0, nrow = length(next_y), ncol = 4*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
@@ -43,10 +43,8 @@ covariates <- Matrix(
         location_time_0[,2]), sparse = TRUE )
 
 # # Loop through chunks of rows
-
-chunk_size <- 1000
-start_row = 1
-curr_row = 1
+chunk_size <- 10
+curr_row <- 1
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
@@ -68,9 +66,11 @@ for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   # Convert result matrix to a sparse Matrix format and store in design_mat
   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 }
-# 
-saveRDS(design_mat,"design_mat_10_INDEP_nnbs.Rda")
-# design_mat <- readRDS("D:/77/Research/temp/snow_trend/design_mat_10_INDEP.Rda")
+
+setwd("D:/77/Research/temp/snow/")
+saveRDS(design_mat,"design01_IND.Rda")
+design_mat <- readRDS("design01_IND.Rda")
+
 tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 4*S, ncol = tot_samples)
@@ -107,31 +107,11 @@ while(save_idx < tot_samples) {
   # pos_mu_2 <- solve(pos_prec, b)
   curr_theta_vec <- rmvn.sparse(1, mu = pos_mu, CH = CH, prec = TRUE)
   
+  # Sample taus
   if((curr_idx > burn) & (curr_idx %% thin == 0) ){
     save_idx <- save_idx + 1
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
   }
 }
 
-saveRDS(all_theta, "self_theta_10_INDEP_nnbs.Rda")
-
-# Compare with stan
-# samples <- readRDS(here::here("test_app_samples.Rda"))
-# theta_01_stan <- apply(samples$theta_01, 2, mean)
-# theta_02_stan <- apply(samples$theta_02, 2, mean)
-# theta_11_stan <- apply(samples$theta_11, 2, mean)
-# theta_12_stan <- apply(samples$theta_12, 2, mean)
-# theta_21_stan <- apply(samples$theta_21, 2, mean)
-# theta_22_stan <- apply(samples$theta_22, 2, mean)
-# theta_a1_stan <- apply(samples$theta_a1, 2, mean)
-# theta_a2_stan <- apply(samples$theta_a2, 2, mean)
-# 
-# par(mfrow = c(4,2))
-# boxplot(cbind(theta_01, theta_01_stan))
-# boxplot(cbind(theta_02, theta_02_stan))
-# boxplot(cbind(theta_11, theta_11_stan))
-# boxplot(cbind(theta_12, theta_12_stan))
-# boxplot(cbind(theta_21, theta_21_stan))
-# boxplot(cbind(theta_22, theta_22_stan))
-# boxplot(cbind(theta_a1, theta_a1_stan))
-# boxplot(cbind(theta_a2, theta_a2_stan))
+saveRDS(all_theta, "theta01_IND.Rda")
