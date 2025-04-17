@@ -7,18 +7,19 @@ library(rnaturalearth)
 library(RColorBrewer)
 library(spBayes)
 library(elevatr)
+
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS(here::here("snow_cleaned.Rda"))[no_nbs,]
-y <- all_y[,-c(1,2)]
-coords <- all_y[,1:2]
-# elev <- read.csv(here::here("curr_elev.csv"))[,3]
-elev <- read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,3]
-lats <- coords[,2]
+all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
+all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
+coords <- rbind(all_y, all_y_nnbs)[,1:2]
+
 sample_idx <- seq(from = 1005, to = 2000, by = 5)
 
-setwd(here::here())
-theta <- readRDS("self_theta_01_nnbs.Rda")[,sample_idx]
-theta_s <- readRDS("self_theta_10_nnbs.Rda")[,sample_idx]
+setwd("D:/77/Research/temp/snow/")
+theta <- readRDS("theta01_bym.Rda")[,sample_idx]
+theta_s <- readRDS("theta10_bym.Rda")[,sample_idx]
+
 S <- nrow(y)
 
 theta_01_all <- theta[1:S,]
@@ -106,46 +107,5 @@ for (week_idx in 1:52) {
   }
 }
 
-saveRDS(weekly_ini, "weekly_ini_without_lat+out_nnbs.Rda")
-saveRDS(weekly_final, "weekly_final_without_lat+out_nnbs.Rda")
-
-
-# 
-# 
-# # Plot for a single time
-# for (i in 1:8) {
-#   # Create the plot
-#   plot <- ggplot() +
-#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-#     geom_sf(data = sf_data_aeqd, aes(color = sf_data_aeqd[[i]] ), size = 2, shape = 18) + # Data points with color mapped
-#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-#     scale_color_viridis_c(option = "C", direction = -1) + # Vibrant color palette
-#     theme_minimal() +
-#     labs(
-#       title = names(sf_data_aeqd)[i],
-#       color = names(sf_data_aeqd)[i]
-#     ) +
-#     theme(
-#       legend.position = "bottom",
-#       plot.title = element_text(hjust = 0.5)
-#     ) + 
-#     guides(
-#       color = guide_colorbar(
-#         barwidth = 20,   # Adjust the width of the color bar
-#         barheight = 0.5  # Adjust the height of the color bar
-#       )
-#     )
-#   
-#   # Save the plot
-#   ggsave(
-#     filename = paste0(names(sf_data_aeqd)[i], ".png"), # Save as plot_1.png, plot_2.png, ...
-#     plot = plot,                          # Specify the plot object
-#     width = 8, height = 6,                # Set width and height
-#     dpi = 300                             # High resolution
-#   )
-# } 
-# 
-# 
-# 
-# 
+saveRDS(weekly_ini_lat_alt, "ini_year_bym.Rda")
+saveRDS(weekly_final_lat_alt, "fin_year_bym.Rda")

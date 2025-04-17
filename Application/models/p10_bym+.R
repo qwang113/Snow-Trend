@@ -79,7 +79,7 @@ covariates <- Matrix(
 
 # Loop through chunks of rows
 chunk_size <- 10
-curr_row <- 1
+curr_row <- 1074781
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
