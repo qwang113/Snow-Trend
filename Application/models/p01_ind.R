@@ -43,8 +43,8 @@ covariates <- Matrix(
         location_time_0[,2]), sparse = TRUE )
 
 # # Loop through chunks of rows
-chunk_size <- 10
-curr_row <- 1
+chunk_size <- 100
+curr_row <- 673001
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
