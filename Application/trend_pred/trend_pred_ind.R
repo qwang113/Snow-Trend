@@ -99,6 +99,6 @@ for (week_idx in 1:52) {
   }
 }
 
-saveRDS(weekly_ini_lat_alt, "ini_year_ind.Rda")
-saveRDS(weekly_final_lat_alt, "fin_year_ind.Rda")
+saveRDS(weekly_ini_INDEP, "ini_year_ind.Rda")
+saveRDS(weekly_final_INDEP, "fin_year_ind.Rda")
 
