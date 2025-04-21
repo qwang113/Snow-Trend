@@ -15,31 +15,15 @@ coords <- all_y[,1:2]
 coords_nnbs <- readRDS(here::here("snow_cleaned.Rda"))[no_nbs,1:2]
 coords <- rbind(coords, coords_nnbs)
 # First year
-setwd("D:/77/Research/temp/snow_trend")
-weekly_ini_without_lat_alt <- readRDS("weekly_ini_without_lat+out.Rda")
-weekly_ini_without_lat_alt_nnbs <- readRDS("weekly_ini_without_lat+out_nnbs.Rda")
-weekly_ini_without_lat_alt <- abind(weekly_ini_without_lat_alt, weekly_ini_without_lat_alt_nnbs, along = 2)
+setwd("D:/77/Research/temp/snow")
+weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
+weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
 
+weekly_ini_lat_alt <- readRDS("ini_year_bym+.Rda")
+weekly_final_lat_alt <- readRDS("fin_year_bym+.Rda")
 
-weekly_final_without_lat_alt <- readRDS("weekly_final_without_lat+out.Rda")
-weekly_final_without_lat_alt_nnbs <- readRDS("weekly_final_without_lat+out_nnbs.Rda")
-weekly_final_without_lat_alt <- abind(weekly_final_without_lat_alt , weekly_final_without_lat_alt_nnbs, along = 2)
-
-weekly_ini_lat_alt <- readRDS("weekly_ini_with_lat+out.Rda")
-weekly_ini_lat_alt_nnbs <- readRDS("weekly_ini_with_lat+out_nnbs.Rda")
-weekly_ini_lat_alt <- abind(weekly_ini_lat_alt, weekly_ini_lat_alt_nnbs, along = 2)
-
-weekly_final_lat_alt <- readRDS("weekly_final_with_lat+out.Rda")
-weekly_final_lat_alt_nnbs <- readRDS("weekly_final_with_lat+out_nnbs.Rda")
-weekly_final_lat_alt <- abind(weekly_final_lat_alt, weekly_final_lat_alt_nnbs, along = 2)
-
-weekly_ini_INDEP <- readRDS("weekly_ini_INDEP.Rda")
-weekly_ini_INDEP_nnbs <- readRDS("weekly_ini_INDEP_nnbs.Rda")
-weekly_ini_INDEP <- abind(weekly_ini_INDEP , weekly_ini_INDEP_nnbs, along = 2)
-
-weekly_final_INDEP <- readRDS("weekly_final_INDEP.Rda")
-weekly_final_INDEP_nnbs <- readRDS("weekly_final_INDEP_nnbs.Rda")
-weekly_final_INDEP <- abind(weekly_final_INDEP, weekly_final_INDEP_nnbs, along=2)
+weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
+weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
 
 # weekly_ini_lat_alt_prior_100 <- readRDS("weekly_ini_with_lat+out_prior_100.Rda")
 # weekly_final_lat_alt_prior_100 <- readRDS("weekly_final_with_lat+out_prior_100.Rda")
@@ -189,7 +173,7 @@ plot4 <- ggplot() +
   geom_sf(data = dpd_aeqd_without_lat_alt, aes(color = log(dpd_aeqd_without_lat_alt[[2]]) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_viridis_c(option = "C", direction = 1, limits = c(-5,-2.5))+
+  scale_color_viridis_c(option = "C", direction = 1, limits = rg_sd)+
 
   theme_minimal() +
   labs(
@@ -213,7 +197,7 @@ plot5 <- ggplot() +
   geom_sf(data = dpd_aeqd_lat_alt, aes(color = log(dpd_aeqd_lat_alt[[2]]) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_viridis_c(option = "C", direction = 1, limits = c(-5,-2.5))+
+  scale_color_viridis_c(option = "C", direction = 1, limits = rg_sd)+
 
   theme_minimal() +
   labs(
@@ -237,7 +221,7 @@ plot6 <- ggplot() +
   geom_sf(data = dpd_aeqd_INDEP, aes(color = log(dpd_aeqd_INDEP[[2]]) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-  scale_color_viridis_c(option = "C", direction = 1, limits = c(-5,-2.5)) +
+  scale_color_viridis_c(option = "C", direction = 1, limits = rg_sd) +
   theme_minimal() +
   labs(
     title ="Aggregated Trend log of SD - IND",

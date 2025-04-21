@@ -144,10 +144,10 @@ for (i in 2:52) {
   #       barheight = 0.5  # Adjust the height of the color bar
   #     )
   #   )
-  trend_aeqd_without_lat_alt$color_val <- pmax(pmin(trend_aeqd_without_lat_alt[[i]], 0.5), -0.5)
+  trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[i]], 0.5), -0.5)
   plot3 <- ggplot() +
     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-    geom_sf(data = trend_aeqd_without_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+    geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
     geom_sf(data = world_aeqd, fill = NA, color = "black") +
     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
     scale_color_gradient2(
@@ -264,7 +264,7 @@ png_files <- list.files(pattern = "plot_\\d+\\.png$")
 png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
 gif <- image_read(png_files)                       # Read images
 gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
-image_write(gif, "trend_animation_bym.gif")            # Save the GIF
+image_write(gif, "trend_animation_bym+.gif")            # Save the GIF
 
 special <- c( which(wk_names %in% c("11.27", "1.15","4.1","6.3")))
 
@@ -394,6 +394,9 @@ p4 <- ggplot() +
     )
   )
 
+plot(density(diff_mean_INDEP[,-1]))
+lines(density(diff_mean_without_lat_alt[,-1]), col = "blue")
+lines(density(diff_mean_lat_alt[,-1]), col = "red")
 
 cowplot::plot_grid(p1,p2, nrow = 1)
 cowplot::plot_grid(p3,p4, nrow = 1)

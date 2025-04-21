@@ -43,8 +43,6 @@ theta_a1s_all <- theta_s[(6*S+1):(7*S),]
 theta_a2s_all <- theta_s[(7*S+1):(8*S),]
 
 
-
-
 beta_0_hat <- theta_01_all + theta_02_all
 beta_1_hat <- theta_11_all + theta_12_all
 beta_2_hat <- theta_21_all + theta_22_all

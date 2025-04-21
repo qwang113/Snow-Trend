@@ -78,31 +78,31 @@ covariates <- Matrix(
         location_time_0[,2], location_time_0[,2]), sparse = TRUE )
 
 # Loop through chunks of rows
-chunk_size <- 10
-curr_row <- 1074781
-for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
-  print(start_row)
-  # Define the end row for the current chunk
-  end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-  
-  # Extract the relevant rows from location_idx and covariates
-  loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
-  cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-  
-  # Apply the outer product to each pair of rows in the chunk
-  # mapply to compute the outer product for each pair of rows
-  result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
-                         split(loc_chunk, row(loc_chunk)),
-                         split(cov_chunk, row(cov_chunk)))
-  
-  # Reshape result to match design matrix row structure
-  result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-  
-  # Convert result matrix to a sparse Matrix format and store in design_mat
-  design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
-}
-setwd("D:/77/Research/temp/snow/")
-saveRDS(design_mat,"design10.Rda")
+# chunk_size <- 10
+# curr_row <- 1074781
+# for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
+#   print(start_row)
+#   # Define the end row for the current chunk
+#   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
+#   
+#   # Extract the relevant rows from location_idx and covariates
+#   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
+#   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
+#   
+#   # Apply the outer product to each pair of rows in the chunk
+#   # mapply to compute the outer product for each pair of rows
+#   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
+#                          split(loc_chunk, row(loc_chunk)),
+#                          split(cov_chunk, row(cov_chunk)))
+#   
+#   # Reshape result to match design matrix row structure
+#   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
+#   
+#   # Convert result matrix to a sparse Matrix format and store in design_mat
+#   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
+# }
+# setwd("D:/77/Research/temp/snow/")
+# saveRDS(design_mat,"design10.Rda")
 design_mat <- readRDS("design10.Rda")
 
 lats_design <- lats[row_idx]
@@ -186,15 +186,6 @@ while(save_idx < tot_samples) {
   }
   
 }
-theta_mean <- apply(all_theta, 1, mean)
-theta_01 <- theta_mean[1:S]
-theta_02 <- theta_mean[(S+1):(2*S)]
-theta_11 <- theta_mean[(2*S+1):(3*S)]
-theta_12 <- theta_mean[(3*S+1):(4*S)]
-theta_21 <- theta_mean[(4*S+1):(5*S)]
-theta_22 <- theta_mean[(5*S+1):(6*S)]
-theta_a1 <- theta_mean[(6*S+1):(7*S)]
-theta_a2 <- theta_mean[(7*S+1):(8*S)]
 
 saveRDS(all_theta, "theta10_bym+.Rda.Rda")
 saveRDS(all_tau, "tau10_bym+.Rda.Rda")

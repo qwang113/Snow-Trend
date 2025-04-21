@@ -37,19 +37,6 @@ theta_22_all <- theta[(5*S+1):(6*S),]
 theta_a1_all <- theta[(6*S+1):(7*S),]
 theta_a2_all <- theta[(7*S+1):(8*S),]
 
-
-theta_01s_all <- theta_s[1:S,]
-theta_02s_all <- theta_s[(S+1):(2*S),]
-theta_11s_all <- theta_s[(2*S+1):(3*S),]
-theta_12s_all <- theta_s[(3*S+1):(4*S),]
-theta_21s_all <- theta_s[(4*S+1):(5*S),]
-theta_22s_all <- theta_s[(5*S+1):(6*S),]
-theta_a1s_all <- theta_s[(6*S+1):(7*S),]
-theta_a2s_all <- theta_s[(7*S+1):(8*S),]
-
-
-
-
 theta_0L_all <- theta[8*S+1,]
 theta_1L_all <- theta[8*S+2,]
 theta_2L_all <- theta[8*S+3,]
@@ -60,6 +47,15 @@ theta_1A_all <- theta[8*S+6,]
 theta_2A_all <- theta[8*S+7,]
 theta_aA_all <- theta[8*S+8,]
 
+
+theta_01s_all <- theta_s[1:S,]
+theta_02s_all <- theta_s[(S+1):(2*S),]
+theta_11s_all <- theta_s[(2*S+1):(3*S),]
+theta_12s_all <- theta_s[(3*S+1):(4*S),]
+theta_21s_all <- theta_s[(4*S+1):(5*S),]
+theta_22s_all <- theta_s[(5*S+1):(6*S),]
+theta_a1s_all <- theta_s[(6*S+1):(7*S),]
+theta_a2s_all <- theta_s[(7*S+1):(8*S),]
 
 theta_0Ls_all <- theta_s[8*S+1,]
 theta_1Ls_all <- theta_s[8*S+2,]
