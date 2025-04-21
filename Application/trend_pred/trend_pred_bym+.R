@@ -29,50 +29,58 @@ theta_s <- readRDS("theta10_bym+.Rda")[,sample_idx]
 S <- nrow(y)
 
 theta_01_all <- theta[1:S,]
-theta_11_all <- theta[(S+1):(2*S),]
-theta_21_all <- theta[(2*S+1):(3*S),]
-theta_a1_all <- theta[(3*S+1):(4*S),]
-
-
-theta_0L_all <- theta[4*S+1,]
-theta_1L_all <- theta[4*S+2,]
-theta_2L_all <- theta[4*S+3,]
-theta_aL_all <- theta[4*S+4,]
-
-theta_0A_all <- theta[4*S+5,]
-theta_1A_all <- theta[4*S+6,]
-theta_2A_all <- theta[4*S+7,]
-theta_aA_all <- theta[4*S+8,]
-
+theta_02_all <- theta[(S+1):(2*S),]
+theta_11_all <- theta[(2*S+1):(3*S),]
+theta_12_all <- theta[(3*S+1):(4*S),]
+theta_21_all <- theta[(4*S+1):(5*S),]
+theta_22_all <- theta[(5*S+1):(6*S),]
+theta_a1_all <- theta[(6*S+1):(7*S),]
+theta_a2_all <- theta[(7*S+1):(8*S),]
 
 
 theta_01s_all <- theta_s[1:S,]
-theta_11s_all <- theta_s[(S+1):(2*S),]
-theta_21s_all <- theta_s[(2*S+1):(3*S),]
-theta_a1s_all <- theta_s[(3*S+1):(4*S),]
-
-
-theta_0Ls_all <- theta_s[4*S+1,]
-theta_1Ls_all <- theta_s[4*S+2,]
-theta_2Ls_all <- theta_s[4*S+3,]
-theta_aLs_all <- theta_s[4*S+4,]
-
-theta_0As_all <- theta_s[4*S+5,]
-theta_1As_all <- theta_s[4*S+6,]
-theta_2As_all <- theta_s[4*S+7,]
-theta_aAs_all <- theta_s[4*S+8,]
+theta_02s_all <- theta_s[(S+1):(2*S),]
+theta_11s_all <- theta_s[(2*S+1):(3*S),]
+theta_12s_all <- theta_s[(3*S+1):(4*S),]
+theta_21s_all <- theta_s[(4*S+1):(5*S),]
+theta_22s_all <- theta_s[(5*S+1):(6*S),]
+theta_a1s_all <- theta_s[(6*S+1):(7*S),]
+theta_a2s_all <- theta_s[(7*S+1):(8*S),]
 
 
 
-beta_0_hat <- theta_01_all  + lats%*%t(theta_0L_all) + elev%*%t(theta_0A_all)
-beta_1_hat <- theta_11_all + lats%*%t(theta_1L_all) + elev%*%t(theta_1A_all)
-beta_2_hat <- theta_21_all + lats%*%t(theta_2L_all) + elev%*%t(theta_2A_all)
-alpha_hat <- theta_a1_all  + lats%*%t(theta_aL_all) + elev%*%t(theta_aA_all)
 
-beta_0s_hat <- theta_01s_all + lats%*%t(theta_0Ls_all) + elev%*%t(theta_0As_all)
-beta_1s_hat <- theta_11s_all + lats%*%t(theta_1Ls_all) + elev%*%t(theta_1As_all)
-beta_2s_hat <- theta_21s_all + lats%*%t(theta_2Ls_all) + elev%*%t(theta_2As_all)
-alpha_s_hat <- theta_a1s_all + lats%*%t(theta_aLs_all) + elev%*%t(theta_aAs_all)
+theta_0L_all <- theta[8*S+1,]
+theta_1L_all <- theta[8*S+2,]
+theta_2L_all <- theta[8*S+3,]
+theta_aL_all <- theta[8*S+4,]
+
+theta_0A_all <- theta[8*S+5,]
+theta_1A_all <- theta[8*S+6,]
+theta_2A_all <- theta[8*S+7,]
+theta_aA_all <- theta[8*S+8,]
+
+
+theta_0Ls_all <- theta_s[8*S+1,]
+theta_1Ls_all <- theta_s[8*S+2,]
+theta_2Ls_all <- theta_s[8*S+3,]
+theta_aLs_all <- theta_s[8*S+4,]
+
+theta_0As_all <- theta_s[8*S+5,]
+theta_1As_all <- theta_s[8*S+6,]
+theta_2As_all <- theta_s[8*S+7,]
+theta_aAs_all <- theta_s[8*S+8,]
+
+
+beta_0_hat <- theta_01_all + theta_02_all + lats%*%t(theta_0L_all) + elev%*%t(theta_0A_all)
+beta_1_hat <- theta_11_all + theta_12_all + lats%*%t(theta_1L_all) + elev%*%t(theta_1A_all)
+beta_2_hat <- theta_21_all + theta_22_all + lats%*%t(theta_2L_all) + elev%*%t(theta_2A_all)
+alpha_hat <- theta_a1_all + theta_a2_all + lats%*%t(theta_aL_all) + elev%*%t(theta_aA_all)
+
+beta_0s_hat <- theta_01s_all + theta_02s_all + lats%*%t(theta_0Ls_all) + elev%*%t(theta_0As_all)
+beta_1s_hat <- theta_11s_all + theta_12s_all + lats%*%t(theta_1Ls_all) + elev%*%t(theta_1As_all)
+beta_2s_hat <- theta_21s_all + theta_22s_all + lats%*%t(theta_2Ls_all) + elev%*%t(theta_2As_all)
+alpha_s_hat <- theta_a1s_all + theta_a2s_all + lats%*%t(theta_aLs_all) + elev%*%t(theta_aAs_all)
 
 
 
@@ -89,8 +97,8 @@ inv_logit <- function(x){return(1/(1+exp(-x)))}
 # Prediction for the first year
 weekly_ini_lat_alt <- array(NA, dim = c(length(sample_idx),SS,52,2))
 weekly_final_lat_alt <- array(NA, dim = c(length(sample_idx),SS,52,2))
-
-for (idx in 1:length(sample_idx)) {
+curr_idx <- 1
+for (idx in curr_idx:length(sample_idx)) {
   for (time in 1:(TT-1)) {
     P[, time, 1, 2] <- inv_logit(
       beta_0_hat[,idx] + beta_1_hat[,idx] * cos(2*pi*time/period) + beta_2_hat[,idx] * sin(2*pi*time/period) + alpha_hat[,idx] * time)

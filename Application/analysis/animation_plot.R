@@ -7,38 +7,25 @@ library(rnaturalearth)
 library(RColorBrewer)
 library(spBayes)
 library(elevatr)
+
+setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS(here::here("snow_cleaned.Rda"))[-no_nbs,]
-y <- all_y[,-c(1,2)]
-coords <- all_y[,1:2]
-coords_nnbs <- readRDS(here::here("snow_cleaned.Rda"))[no_nbs,1:2]
-coords <- rbind(coords, coords_nnbs)
+all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
+all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
+coords <- rbind(all_y, all_y_nnbs)[,1:2]
+
 # First year
-setwd("D:/77/Research/temp/snow_trend")
-weekly_ini_without_lat_alt <- readRDS("weekly_ini_without_lat+out.Rda")
-weekly_ini_without_lat_alt_nnbs <- readRDS("weekly_ini_without_lat+out_nnbs.Rda")
-weekly_ini_without_lat_alt <- abind(weekly_ini_without_lat_alt, weekly_ini_without_lat_alt_nnbs, along = 2)
+setwd("D:/77/Research/temp/snow")
+weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
+weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
+
+weekly_ini_lat_alt <- readRDS("ini_year_bym+.Rda")
+weekly_final_lat_alt <- readRDS("fin_year_bym+.Rda")
 
 
-weekly_final_without_lat_alt <- readRDS("weekly_final_without_lat+out.Rda")
-weekly_final_without_lat_alt_nnbs <- readRDS("weekly_final_without_lat+out_nnbs.Rda")
-weekly_final_without_lat_alt <- abind(weekly_final_without_lat_alt , weekly_final_without_lat_alt_nnbs, along = 2)
-
-weekly_ini_lat_alt <- readRDS("weekly_ini_with_lat+out.Rda")
-weekly_ini_lat_alt_nnbs <- readRDS("weekly_ini_with_lat+out_nnbs.Rda")
-weekly_ini_lat_alt <- abind(weekly_ini_lat_alt, weekly_ini_lat_alt_nnbs, along = 2)
-
-weekly_final_lat_alt <- readRDS("weekly_final_with_lat+out.Rda")
-weekly_final_lat_alt_nnbs <- readRDS("weekly_final_with_lat+out_nnbs.Rda")
-weekly_final_lat_alt <- abind(weekly_final_lat_alt, weekly_final_lat_alt_nnbs, along = 2)
-
-weekly_ini_INDEP <- readRDS("weekly_ini_INDEP.Rda")
-weekly_ini_INDEP_nnbs <- readRDS("weekly_ini_INDEP_nnbs.Rda")
-weekly_ini_INDEP <- abind(weekly_ini_INDEP , weekly_ini_INDEP_nnbs, along = 2)
-
-weekly_final_INDEP <- readRDS("weekly_final_INDEP.Rda")
-weekly_final_INDEP_nnbs <- readRDS("weekly_final_INDEP_nnbs.Rda")
-weekly_final_INDEP <- abind(weekly_final_INDEP, weekly_final_INDEP_nnbs, along=2)
+weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
+weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
 
 
 
@@ -272,7 +259,7 @@ for (i in 2:52) {
   )
 }
 
-setwd("D:/77/Research/temp/snow_trend")
+setwd("D:/77/Research/temp/snow/frame_by_frame")
 png_files <- list.files(pattern = "plot_\\d+\\.png") 
 png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
 gif <- image_read(png_files)                       # Read images
@@ -281,7 +268,7 @@ image_write(gif, "trend_animation.gif")            # Save the GIF
 
 special <- c( which(wk_names %in% c("11.27", "1.15","4.1","6.3")))
 
-trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[1]]], 0.3), -0.3)
+trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_without_lat_alt[[special[1]]], 0.3), -0.3)
 p1 <- ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
   geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
@@ -409,134 +396,7 @@ p4 <- ggplot() +
 
 
 cowplot::plot_grid(p1,p2, nrow = 1)
-
 cowplot::plot_grid(p3,p4, nrow = 1)
 
-
-# # Sensitivity Analylsis
-# 
-# library(magick)
-# # Trend Plot
-# for (i in 2:52) {
-#   print(i)
-#   # Create the plot
-#   plot1 <- ggplot() +
-#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-#     geom_sf(data = trend_aeqd_lat_alt, aes(color = trend_aeqd_lat_alt[[i]] ), size = 2, shape = 18) + # Data points with color mapped
-#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-#     scale_color_gradient2(
-#       low = "red",          # Color for negative values
-#       mid = "white",  # Color for zero
-#       high = "blue",         # Color for positive values
-#       midpoint = 0,          # Set midpoint at zero
-#       limits = range(c(diff_mean_lat_alt[,-1],diff_mean_lat_alt_prior_100[,-1] )), # Set the range of the legend
-#       guide = "colourbar"
-#     ) +
-#     theme_minimal() +
-#     labs(
-#       title = paste("Trend Mean for Week (prior sd = 5)",wk_names[i]),
-#       color = ""
-#     ) +
-#     theme(
-#       legend.position = "bottom",
-#       plot.title = element_text(hjust = 0.5)
-#     ) + 
-#     guides(
-#       color = guide_colorbar(
-#         barwidth = 20,   # Adjust the width of the color bar
-#         barheight = 0.5  # Adjust the height of the color bar
-#       )
-#     )
-#   
-#   plot2 <- ggplot() +
-#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-#     geom_sf(data = trend_aeqd_lat_alt, aes(color = trend_aeqd_lat_alt[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
-#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-#     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
-#     theme_minimal() +
-#     labs(
-#       title = paste("Trend sd for Week (prior sd = 5)",wk_names[i]),
-#       color = ""
-#     ) +
-#     theme(
-#       legend.position = "bottom",
-#       plot.title = element_text(hjust = 0.5)
-#     ) + 
-#     guides(
-#       color = guide_colorbar(
-#         barwidth = 20,   # Adjust the width of the color bar
-#         barheight = 0.5  # Adjust the height of the color bar
-#       )
-#     )
-#   plot3 <- ggplot() +
-#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-#     geom_sf(data = trend_aeqd_lat_alt_prior_100, aes(color = trend_aeqd_lat_alt_prior_100[[i]] ), size = 2, shape = 18) + # Data points with color mapped
-#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-#     scale_color_gradient2(
-#       low = "red",          # Color for negative values
-#       mid = "white",  # Color for zero
-#       high = "blue",         # Color for positive values
-#       midpoint = 0,          # Set midpoint at zero
-#       limits = range(c(diff_mean_lat_alt[,-1],diff_mean_lat_alt_prior_100[,-1] )), # Set the range of the legend
-#       guide = "colourbar"
-#     ) +
-#     theme_minimal() +
-#     labs(
-#       title = paste("Trend Mean for Week (prior sd = 100)",wk_names[i]),
-#       color = ""
-#     ) +
-#     theme(
-#       legend.position = "bottom",
-#       plot.title = element_text(hjust = 0.5)
-#     ) + 
-#     guides(
-#       color = guide_colorbar(
-#         barwidth = 20,   # Adjust the width of the color bar
-#         barheight = 0.5  # Adjust the height of the color bar
-#       )
-#     )
-#   
-#   plot4 <- ggplot() +
-#     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-#     geom_sf(data = trend_aeqd_lat_alt_prior_100, aes(color = trend_aeqd_lat_alt_prior_100[[i+52]] ), size = 2, shape = 18) + # Data points with color mapped
-#     geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
-#     geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
-#     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.164)) + # Vibrant color palette
-#     theme_minimal() +
-#     labs(
-#       title = paste("Trend sd for Week (prior sd = 100)",wk_names[i]),
-#       color = ""
-#     ) +
-#     theme(
-#       legend.position = "bottom",
-#       plot.title = element_text(hjust = 0.5)
-#     ) + 
-#     guides(
-#       color = guide_colorbar(
-#         barwidth = 20,   # Adjust the width of the color bar
-#         barheight = 0.5  # Adjust the height of the color bar
-#       )
-#     )
-#   
-#   
-#   plot = cowplot::plot_grid(plot1, plot2, plot3, plot4, nrow = 2)
-#   # Save the plot
-#   ggsave(
-#     filename = paste0("plots_ss",i, ".png"), # Save as plot_1.png, plot_2.png, ...
-#     plot = plot,                          # Specify the plot object
-#     width = 15, height = 15,                # Set width and height
-#     dpi = 100                             # High resolution
-#   )
-# } 
-# setwd("D:/77/Research/temp/snow_trend")
-# png_files <- list.files(pattern = "plots_\\d+\\.png") 
-# png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
-# gif <- image_read(png_files)                       # Read images
-# gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
-# image_write(gif, "trend_animation_sensitivity.gif")            # Save the GIF
-
-
-
+thetas <- readRDS("D:/77/Research/temp/snow/theta01_bym.Rda")
+taus <- readRDS("D:/77/Research/temp/snow/tau01_bym.Rda")
