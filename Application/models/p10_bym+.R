@@ -101,12 +101,12 @@ covariates <- Matrix(
 #   # Convert result matrix to a sparse Matrix format and store in design_mat
 #   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 # }
-# setwd("D:/77/Research/temp/snow/")
+setwd("D:/77/Research/temp/snow/")
 # saveRDS(design_mat,"design10.Rda")
 design_mat <- readRDS("design10.Rda")
 
-lats_design <- lats[row_idx]
-elev_design <- elev[row_idx,3]
+lats_design <- scale(lats[row_idx])
+elev_design <- scale(elev[row_idx,3])
 
 other_covariates <- Matrix(
   cbind(lats_design, 
@@ -121,7 +121,7 @@ other_covariates <- Matrix(
 design_mat <- cbind(design_mat, other_covariates)
 
 
-tot_samples <- 2000
+tot_samples <- 1000
 
 all_theta <- matrix(NA, nrow = 8*S + 8, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
@@ -187,5 +187,5 @@ while(save_idx < tot_samples) {
   
 }
 
-saveRDS(all_theta, "theta10_bym+.Rda.Rda")
-saveRDS(all_tau, "tau10_bym+.Rda.Rda")
+saveRDS(all_theta, "theta10_bym+sc.Rda.Rda")
+saveRDS(all_tau, "tau10_bym+sc.Rda.Rda")
