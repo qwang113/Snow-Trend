@@ -113,6 +113,22 @@ theta_2Asdd_all <- thetas_bymp2[8*S+7,]
 theta_aAsdd_all <- thetas_bymp2[8*S+8,]
 
 
+beta_0_hat <- theta_01_all + theta_02_all + lats%*%t(theta_0A_all) + elev%*%t(theta_0L_all)
+beta_1_hat <- theta_11_all + theta_12_all + lats%*%t(theta_1A_all) + elev%*%t(theta_1L_all)
+beta_2_hat <- theta_21_all + theta_22_all + lats%*%t(theta_2A_all) + elev%*%t(theta_2L_all)
+beta_a_hat <- theta_a1_all + theta_a2_all + lats%*%t(theta_aA_all) + elev%*%t(theta_aL_all)
+
+beta_0dd_hat <- theta_01dd_all + theta_02dd_all + lats[1:1601]%*%t(theta_0Add_all) + elev[1:1601]%*%t(theta_0Ldd_all)
+beta_1dd_hat <- theta_11dd_all + theta_12dd_all + lats[1:1601]%*%t(theta_1Add_all) + elev[1:1601]%*%t(theta_1Ldd_all)
+beta_2dd_hat <- theta_21dd_all + theta_22dd_all + lats[1:1601]%*%t(theta_2Add_all) + elev[1:1601]%*%t(theta_2Ldd_all)
+beta_add_hat <- theta_a1dd_all + theta_a2dd_all + lats[1:1601]%*%t(theta_aAdd_all) + elev[1:1601]%*%t(theta_aLdd_all)
+
+
+hist(apply((elev%*%t(theta_aL_all))[1:1601,] - elev[1:1601]%*%t(theta_aLdd_all), 1, mean))
+
+
+
+
 checks <- function(A,B){
   par(mfrow = c(1,1))
   hist(A-B)

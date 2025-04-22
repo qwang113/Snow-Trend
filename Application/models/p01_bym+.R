@@ -104,8 +104,8 @@ covariates <- Matrix(
 # 
 # saveRDS(design_mat,"design_mat_01.Rda")
 design_mat <- readRDS("D:/77/Research/temp/snow/design01.Rda")
-lats_design <- lats[row_idx]
-elev_design <- elev[row_idx,3]
+lats_design <- scale(lats[row_idx])
+elev_design <- scale(elev[row_idx,3])
 
 other_covariates <- Matrix(
   cbind(lats_design, 
