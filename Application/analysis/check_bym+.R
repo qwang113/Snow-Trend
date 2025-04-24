@@ -129,13 +129,12 @@ hist(apply((elev%*%t(theta_aL_all))[1:1601,] - elev[1:1601]%*%t(theta_aLdd_all),
 
 
 
-checks <- function(A,B){
+checks <- function(A){
   par(mfrow = c(1,1))
-  hist(A-B)
   hist(A)
-  return(list(mean(A-B),sd(A-B),mean(A),mean(B),sd(A),sd(B)))
+  return(list(mean(A),sd(A)))
 }
+checks(theta_aAs_all)
 
-checks(theta_aA_all, theta_aAdd_all)
-plot(theta_aA_all, type = 'l', ylim = c(-0.0001,0.0001))
-lines(theta_aAdd_all, col = "red")
+
+

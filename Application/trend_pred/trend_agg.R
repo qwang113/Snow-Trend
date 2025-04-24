@@ -19,8 +19,8 @@ setwd("D:/77/Research/temp/snow")
 weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
 weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
 
-weekly_ini_lat_alt <- readRDS("ini_year_bym+.Rda")
-weekly_final_lat_alt <- readRDS("fin_year_bym+.Rda")
+weekly_ini_lat_alt <- readRDS("ini_year_bym+notime.Rda")
+weekly_final_lat_alt <- readRDS("fin_year_bym+notime.Rda")
 
 weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
 weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
@@ -32,7 +32,7 @@ dpd_snow_diff <- (apply(weekly_final_without_lat_alt[,,,2],c(1,2),sum) - apply(w
 dpd_diff_mean_without_lat_alt <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_without_lat_alt <- apply(dpd_snow_diff,2,sd)
 
-dpd_snow_diff <- (apply(weekly_final_lat_alt[1:50,,,2],c(1,2),sum) - apply(weekly_ini_lat_alt[1:50,,,2], c(1,2),sum))/53
+dpd_snow_diff <- (apply(weekly_final_lat_alt[1:5,,,2],c(1,2),sum) - apply(weekly_ini_lat_alt[1:5,,,2], c(1,2),sum))/53
 dpd_diff_mean_lat_alt <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_lat_alt <- apply(dpd_snow_diff,2,sd)
 

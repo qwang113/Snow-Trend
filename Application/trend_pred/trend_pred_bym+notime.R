@@ -14,20 +14,16 @@ all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
 y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
 coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
-elev <- read.csv(here::here("curr_elev.csv"))
-elev_nnbs <- read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,-5]
-
-colnames(elev_nnbs) <- colnames(elev)
-elev <- rbind(elev, elev_nnbs)[,4]
-elev <- sign(elev) * abs(elev)^(1/5)
+elev <- c(read.csv(here::here("curr_elev.csv"))[,4]
+        ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4])
 lats <- coords[,2]
 
-sample_idx <- seq(from = 200, to = 1000, by = 200)
+sample_idx <- seq(from = 204, to = 1000, by = 4)
 
 setwd("D:/77/Research/temp/snow/")
 
-theta <- readRDS("theta01_bym+.Rda")[,sample_idx]
-theta_s <- readRDS("theta10_bym+.Rda")[,sample_idx]
+theta <- readRDS("theta01_bym+notime.Rda")[,sample_idx]
+theta_s <- readRDS("theta10_bym+notime.Rda")[,sample_idx]
 S <- nrow(y)
 
 theta_01_all <- theta[1:S,]
@@ -42,12 +38,9 @@ theta_a2_all <- theta[(7*S+1):(8*S),]
 theta_0L_all <- theta[8*S+1,]
 theta_1L_all <- theta[8*S+2,]
 theta_2L_all <- theta[8*S+3,]
-theta_aL_all <- theta[8*S+4,]
-
-theta_0A_all <- theta[8*S+5,]
-theta_1A_all <- theta[8*S+6,]
-theta_2A_all <- theta[8*S+7,]
-theta_aA_all <- theta[8*S+8,]
+theta_0A_all <- theta[8*S+4,]
+theta_1A_all <- theta[8*S+5,]
+theta_2A_all <- theta[8*S+6,]
 
 
 theta_01s_all <- theta_s[1:S,]
@@ -62,23 +55,21 @@ theta_a2s_all <- theta_s[(7*S+1):(8*S),]
 theta_0Ls_all <- theta_s[8*S+1,]
 theta_1Ls_all <- theta_s[8*S+2,]
 theta_2Ls_all <- theta_s[8*S+3,]
-theta_aLs_all <- theta_s[8*S+4,]
+theta_0As_all <- theta_s[8*S+4,]
+theta_1As_all <- theta_s[8*S+5,]
+theta_2As_all <- theta_s[8*S+6,]
 
-theta_0As_all <- theta_s[8*S+5,]
-theta_1As_all <- theta_s[8*S+6,]
-theta_2As_all <- theta_s[8*S+7,]
-theta_aAs_all <- theta_s[8*S+8,]
 
 
 beta_0_hat <- theta_01_all + theta_02_all + lats%*%t(theta_0L_all) + elev%*%t(theta_0A_all)
 beta_1_hat <- theta_11_all + theta_12_all + lats%*%t(theta_1L_all) + elev%*%t(theta_1A_all)
 beta_2_hat <- theta_21_all + theta_22_all + lats%*%t(theta_2L_all) + elev%*%t(theta_2A_all)
-alpha_hat <- theta_a1_all + theta_a2_all + lats%*%t(theta_aL_all) + elev%*%t(theta_aA_all)
+alpha_hat <- theta_a1_all + theta_a2_all
 
 beta_0s_hat <- theta_01s_all + theta_02s_all + lats%*%t(theta_0Ls_all) + elev%*%t(theta_0As_all)
 beta_1s_hat <- theta_11s_all + theta_12s_all + lats%*%t(theta_1Ls_all) + elev%*%t(theta_1As_all)
 beta_2s_hat <- theta_21s_all + theta_22s_all + lats%*%t(theta_2Ls_all) + elev%*%t(theta_2As_all)
-alpha_s_hat <- theta_a1s_all + theta_a2s_all + lats%*%t(theta_aLs_all) + elev%*%t(theta_aAs_all)
+alpha_s_hat <- theta_a1s_all + theta_a2s_all
 
 
 
@@ -128,5 +119,5 @@ for (idx in curr_idx:length(sample_idx)) {
   }
 }
 setwd("D:/77/Research/temp/snow/")
-saveRDS(weekly_ini_lat_alt, "ini_year_bym+.Rda")
-saveRDS(weekly_final_lat_alt, "fin_year_bym+.Rda")
+saveRDS(weekly_ini_lat_alt, "ini_year_bym+notime.Rda")
+saveRDS(weekly_final_lat_alt, "fin_year_bym+notime.Rda")

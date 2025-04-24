@@ -7,29 +7,21 @@ library(fields)
 library(spatstat)
 library(reshape2)
 library(ggplot2)
-library(rstan)
 library(maps)
 library(spBayes)
 library(BayesLogit)
 library(Matrix)
 library(future.apply)
 library(pbapply)
-setwd(here::here())
 library(sparseMVN) 
-
+setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
-all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
-y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
-coords <- rbind(all_y, all_y_nnbs)[,1:2]
-
-elev <- read.csv(here::here("curr_elev.csv"))
-elev_nnbs <- read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,-5]
-colnames(elev_nnbs) <- colnames(elev)
-elev <- rbind(elev, elev_nnbs)
+all_y <- rbind(readRDS("snow_cleaned.Rda")[-no_nbs,],readRDS("snow_cleaned.Rda")[no_nbs,])
+y <- all_y[,-c(1,2)]
+coords <- all_y[,1:2]
+elev <- c(read.csv(here::here("curr_elev.csv"))[,4],
+          read.csv(here::here("nnbs_elev.csv"),sep = "\t", row.names = NULL)[,4])
 lats <- coords[,2]
-
-
 S <- nrow(y)
 TT <- ncol(y)
 sf_coords <- st_as_sf(data.frame(coords), coords = c("LON", "LAT"), crs = 4326)
@@ -41,13 +33,13 @@ theta <- atan2(dif[2], dif[1])
 
 rotate_points <- function(coords, angle) {
   # Create a rotation matrix for 2D rotation
-  rotation_matrix <- matrix(c(cos(angle), -sin(angle),
-                              sin(angle), cos(angle)),
+  rotation_matrix <- matrix(c(cos(angle), -sin(angle), 
+                              sin(angle), cos(angle)), 
                             ncol = 2)
-
+  
   # Apply the rotation to the coordinates
   rotated_coords <- t(rotation_matrix %*% t(coords))
-
+  
   return(rotated_coords)
 }
 
@@ -59,9 +51,8 @@ Omg[which(Distances <= 0.22)] = 1
 Omg <- Omg - diag(nrow = nrow(coords))
 # D <- diag(rowSums(Omg))
 D <- Matrix(diag(rowSums(Omg)) ,sparse = TRUE)
-sigma = 0.1
+sigma = 1
 period = 52
-
 
 location_time_0 <- which(y[,-ncol(y)]==1, arr.ind =  TRUE)
 row_idx <- location_time_0[,1]
@@ -69,6 +60,7 @@ next_y <- abs(y[cbind(location_time_0[,1], location_time_0[,2]+1)] - 1)
 design_mat <- Matrix(0, nrow = length(next_y), ncol = 8*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
 
+# pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
 covariates <- Matrix(
   cbind(1,1,
         cos(2*pi*location_time_0[,2]/period),
@@ -77,63 +69,58 @@ covariates <- Matrix(
         sin(2*pi*location_time_0[,2]/period), 
         location_time_0[,2], location_time_0[,2]), sparse = TRUE )
 
-# Loop through chunks of rows
+# # Loop through chunks of rows
 # chunk_size <- 10
-# curr_row <- 1074781
+# curr_row <- 1
 # for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
 #   print(start_row)
 #   # Define the end row for the current chunk
 #   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-#   
+# 
 #   # Extract the relevant rows from location_idx and covariates
 #   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
 #   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-#   
+# 
 #   # Apply the outer product to each pair of rows in the chunk
 #   # mapply to compute the outer product for each pair of rows
 #   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
 #                          split(loc_chunk, row(loc_chunk)),
 #                          split(cov_chunk, row(cov_chunk)))
-#   
+# 
 #   # Reshape result to match design matrix row structure
 #   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-#   
+# 
 #   # Convert result matrix to a sparse Matrix format and store in design_mat
 #   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 # }
-setwd("D:/77/Research/temp/snow/")
-# saveRDS(design_mat,"design10.Rda")
-design_mat <- readRDS("design10.Rda")
 
-lats_design <- scale(lats[row_idx])
-elev_design <- scale(elev[row_idx,3])
+# saveRDS(design_mat,"D:/77/Research/temp/snow/design10.Rda")
+design_mat <- readRDS("D:/77/Research/temp/snow/design10.Rda")
+
+lats_design <- lats[row_idx]
+elev_design <- elev[row_idx]
 
 other_covariates <- Matrix(
   cbind(lats_design, 
         lats_design*cos(2*pi*location_time_0[,2]/period),
         lats_design*sin(2*pi*location_time_0[,2]/period),
-        lats_design*location_time_0[,2],
         elev_design,
         elev_design*cos(2*pi*location_time_0[,2]/period),
-        elev_design*sin(2*pi*location_time_0[,2]/period),
-        elev_design*location_time_0[,2]), sparse = TRUE )
+        elev_design*sin(2*pi*location_time_0[,2]/period)), sparse = TRUE )
 
 design_mat <- cbind(design_mat, other_covariates)
-
-
 tot_samples <- 1000
 
-all_theta <- matrix(NA, nrow = 8*S + 8, ncol = tot_samples)
+all_theta <- matrix(NA, nrow = 8*S + 6, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
-curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S + 8)
-curr_tau_vec <- rep(0.1,8)
+curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S + 6)
+curr_tau_vec <- rep(1,8)
 a_tau <- 0.001
 b_tau <- 0.001
 curr_idx <- 0
 save_idx <- 0
 burn = 0
 thin = 1
-
 prec <- D - Omg
 
 while(save_idx < tot_samples) {
@@ -143,7 +130,6 @@ while(save_idx < tot_samples) {
   kappas <- next_y - 1/2
   curr_phi <- design_mat %*% t(curr_theta_vec)
   curr_omega <-  rpg(length(next_y), h = 1, z = as.numeric(curr_phi))
-  
   # Sample current theta
   curr_prec <- bdiag(
     1/curr_tau_vec[1]*prec,
@@ -154,7 +140,7 @@ while(save_idx < tot_samples) {
     1/curr_tau_vec[6]*diag(1,S),
     1/curr_tau_vec[7]*prec,
     1/curr_tau_vec[8]*diag(1,S),
-    1/10000*diag(1,8)
+    1/10000*diag(1,6)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -182,10 +168,8 @@ while(save_idx < tot_samples) {
     save_idx <- save_idx + 1
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
     all_tau[,save_idx] <-  as.vector(curr_tau_vec)
-    print(round(curr_tau_vec,5))
   }
-  
 }
-
-saveRDS(all_theta, "theta10_bym+sc.Rda.Rda")
-saveRDS(all_tau, "tau10_bym+sc.Rda.Rda")
+setwd("D:/77/Research/temp/snow/")
+saveRDS(all_theta[,1:1000], "theta10_bym+notime.Rda")
+saveRDS(all_tau[,1:1000], "tau10_bym+notime.Rda")
