@@ -91,7 +91,7 @@ plot1 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title ="Aggregated Trend - SP",
+    title ="Aggregated Trend - BYM",
     color = ""
   ) +
   theme(
@@ -122,7 +122,7 @@ plot2 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title ="Aggregated Trend - SP + Covariates",
+    title ="Aggregated Trend - BYM+",
     color = ""
   ) +
   theme(
@@ -177,7 +177,7 @@ plot4 <- ggplot() +
 
   theme_minimal() +
   labs(
-    title ="Aggregated Trend log of SD - SP",
+    title ="Aggregated Trend log of SD - BYM",
     color = ""
   ) +
   theme(
@@ -201,7 +201,7 @@ plot5 <- ggplot() +
 
   theme_minimal() +
   labs(
-    title ="Aggregated Trend log of SD - SP + Covariates",
+    title ="Aggregated Trend log of SD - BYM+",
     color = ""
   ) +
   theme(
