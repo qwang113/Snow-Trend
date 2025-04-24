@@ -20,8 +20,8 @@ setwd("D:/77/Research/temp/snow")
 weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
 weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
 
-weekly_ini_lat_alt <- readRDS("ini_year_bym+sc.Rda")
-weekly_final_lat_alt <- readRDS("fin_year_bym+sc.Rda")
+weekly_ini_lat_alt <- readRDS("ini_year_bym+notime.Rda")
+weekly_final_lat_alt <- readRDS("fin_year_bym+notime.Rda")
 
 
 weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
@@ -300,10 +300,10 @@ p1 <- ggplot() +
   )
 
 
-trend_aeqd_without_lat_alt$color_val <- pmax(pmin(trend_aeqd_without_lat_alt[[special[1]]], 0.3), -0.3)
+trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_without_lat_alt[[special[2]]], 0.3), -0.3)
 p2 <- ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = trend_aeqd_without_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
   geom_sf(data = world_aeqd, fill = NA, color = "black") +
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
   scale_color_gradient2(
@@ -396,7 +396,8 @@ p4 <- ggplot() +
 
 plot(density(diff_mean_INDEP[,-1]))
 lines(density(diff_mean_without_lat_alt[,-1]), col = "blue")
-plot(density(diff_mean_lat_alt[,-1]), col = "red")
+lines(density(diff_mean_lat_alt[,-1]), col = "red")
 
 cowplot::plot_grid(p1,p2, nrow = 1)
 cowplot::plot_grid(p3,p4, nrow = 1)
+
