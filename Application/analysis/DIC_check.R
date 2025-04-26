@@ -73,7 +73,7 @@ beta_2s_hat <- theta_21s_all + theta_22s_all + lats%*%t(theta_2Ls_all) + elev%*%
 alpha_s_hat <- theta_a1s_all + theta_a2s_all
 
 inv_logit <- function(x){return(1/(1+exp(-x)))}
-my_param <- cbind(rowMeans(beta_0_hat),
+my_param_notime <- my_param <- cbind(rowMeans(beta_0_hat),
                   rowMeans(beta_1_hat),
                   rowMeans(beta_2_hat),
                   rowMeans(alpha_hat),
@@ -120,8 +120,8 @@ notime_llh <- all_llh
 
 # Time included llh
 
-theta <- readRDS("theta01_bym+.Rda")[,sample_idx]
-theta_s <- readRDS("theta10_bym+.Rda")[,sample_idx]
+theta <- readRDS("theta01_bym+withtime.Rda")[,sample_idx]
+theta_s <- readRDS("theta10_bym+withtime.Rda")[,sample_idx]
 S <- nrow(y)
 
 theta_01_all <- theta[1:S,]
@@ -174,7 +174,7 @@ beta_2s_hat <- theta_21s_all + theta_22s_all + lats%*%t(theta_2Ls_all) + elev%*%
 alpha_s_hat <- theta_a1s_all + theta_a2s_all + lats%*%t(theta_aLs_all) + elev%*%t(theta_aAs_all)
 
 inv_logit <- function(x){return(1/(1+exp(-x)))}
-my_param <- cbind(rowMeans(beta_0_hat),
+my_param_withtime <- my_param <- cbind(rowMeans(beta_0_hat),
                   rowMeans(beta_1_hat),
                   rowMeans(beta_2_hat),
                   rowMeans(alpha_hat),
@@ -217,3 +217,4 @@ for (s in 1:SS) {
   all_llh[s] <- llh
 }
 withtime_llh <- all_llh
+
