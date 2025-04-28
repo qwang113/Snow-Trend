@@ -174,5 +174,5 @@ while(save_idx < tot_samples) {
 }
 
 setwd("D:/77/Research/temp/snow/")
-saveRDS(all_theta, "theta01_bym+notime.Rda")
-saveRDS(all_tau, "tau01_bym+notime.Rda")
+saveRDS(all_theta, "theta01_bym+withtime.Rda")
+saveRDS(all_tau, "tau01_bym+withtime.Rda")
