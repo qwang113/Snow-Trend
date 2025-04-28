@@ -284,7 +284,7 @@ p1 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[1]]),
+    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[1]]),
     color = ""
   ) +
   annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[1]], size = 20) +
@@ -316,7 +316,7 @@ p2 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[2]]),
+    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[2]]),
     color = ""
   ) +
   annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[2]], size = 20) +
@@ -347,7 +347,7 @@ p3 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[3]]),
+    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[3]]),
     color = ""
   ) +
   annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[3]], size = 20) +
@@ -379,7 +379,7 @@ p4 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[special[4]]),
+    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[4]]),
     color = ""
   ) +
   annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[4]], size = 20) +

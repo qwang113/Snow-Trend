@@ -19,8 +19,8 @@ setwd("D:/77/Research/temp/snow")
 weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
 weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
 
-weekly_ini_lat_alt <- readRDS("ini_year_bym+notime.Rda")
-weekly_final_lat_alt <- readRDS("fin_year_bym+notime.Rda")
+weekly_ini_lat_alt <- readRDS("ini_year_bym+withtime.Rda")
+weekly_final_lat_alt <- readRDS("fin_year_bym+withtime.Rda")
 
 weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
 weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
@@ -91,7 +91,7 @@ plot1 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title ="Aggregated Trend - SP",
+    title ="Aggregated Trend - BYM",
     color = ""
   ) +
   theme(
@@ -122,7 +122,7 @@ plot2 <- ggplot() +
   ) +
   theme_minimal() +
   labs(
-    title ="Aggregated Trend - SP + Covariates",
+    title ="Aggregated Trend - BYM+",
     color = ""
   ) +
   theme(
@@ -177,7 +177,7 @@ plot4 <- ggplot() +
 
   theme_minimal() +
   labs(
-    title ="Aggregated Trend log of SD - SP",
+    title ="Aggregated Trend log of SD - BYM",
     color = ""
   ) +
   theme(
@@ -201,7 +201,7 @@ plot5 <- ggplot() +
 
   theme_minimal() +
   labs(
-    title ="Aggregated Trend log of SD - SP + Covariates",
+    title ="Aggregated Trend log of SD - BYM+",
     color = ""
   ) +
   theme(
