@@ -17,8 +17,13 @@ library(sparseMVN)
 setwd(here::here())
 
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
-all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+
+# all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
+# all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+
+all_y <- readRDS("snow_cleaned_full.Rda")[-no_nbs,]
+all_y_nnbs <- readRDS("snow_cleaned_full.Rda")[no_nbs,]
+
 y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
 coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
@@ -48,7 +53,7 @@ covariates <- Matrix(
 
 chunk_size <- 100
 # start_row = 1
-curr_row = 641801
+curr_row = 1
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
