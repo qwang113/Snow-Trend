@@ -51,30 +51,30 @@ covariates <- Matrix(
 
 # # Loop through chunks of rows
 
-chunk_size <- 100
-# start_row = 1
-curr_row = 1
-for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
-  print(start_row)
-  # Define the end row for the current chunk
-  end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-
-  # Extract the relevant rows from location_idx and covariates
-  loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
-  cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-
-  # Apply the outer product to each pair of rows in the chunk
-  # mapply to compute the outer product for each pair of rows
-  result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
-                         split(loc_chunk, row(loc_chunk)),
-                         split(cov_chunk, row(cov_chunk)))
-
-  # Reshape result to match design matrix row structure
-  result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-
-  # Convert result matrix to a sparse Matrix format and store in design_mat
-  design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
-}
+# chunk_size <- 10
+# # start_row = 1
+# curr_row = 1689001
+# for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
+#   print(start_row)
+#   # Define the end row for the current chunk
+#   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
+# 
+#   # Extract the relevant rows from location_idx and covariates
+#   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
+#   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
+# 
+#   # Apply the outer product to each pair of rows in the chunk
+#   # mapply to compute the outer product for each pair of rows
+#   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
+#                          split(loc_chunk, row(loc_chunk)),
+#                          split(cov_chunk, row(cov_chunk)))
+# 
+#   # Reshape result to match design matrix row structure
+#   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
+# 
+#   # Convert result matrix to a sparse Matrix format and store in design_mat
+#   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
+# }
 
 setwd("D:/77/Research/temp/snow/")
 saveRDS(design_mat,"design10_IND.Rda")

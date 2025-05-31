@@ -69,8 +69,8 @@ covariates <- Matrix(
         sin(2*pi*location_time_0[,2]/period), 
         location_time_0[,2], location_time_0[,2]), sparse = TRUE )
 
-# # Loop through chunks of rows
-chunk_size <- 10
+# Loop through chunks of rows
+chunk_size <- 1000
 curr_row <- 1
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
@@ -93,6 +93,7 @@ for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   # Convert result matrix to a sparse Matrix format and store in design_mat
   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 }
+
 saveRDS(design_mat,"design_mat_01.Rda")
 design_mat <- readRDS("D:/77/Research/temp/snow/design01.Rda")
 lats_design <- lats[row_idx]

@@ -75,50 +75,51 @@ thin = 1
 prec <- D - Omg
 
 while(save_idx < tot_samples) {
-    curr_idx = curr_idx + 1
-    print(curr_idx)
-    # Sample current Omega
-    kappas <- next_y - 1/2
-    curr_phi <- design_mat %*% t(curr_theta_vec)
-    curr_omega <-  rpg(length(next_y), h = 1, z = as.numeric(curr_phi))
-    # Sample current theta
-    curr_prec <- bdiag(
-      1/curr_tau_vec[1]*prec,
-      1/curr_tau_vec[2]*diag(1,S),
-      1/curr_tau_vec[3]*prec,
-      1/curr_tau_vec[4]*diag(1,S),
-      1/curr_tau_vec[5]*prec,
-      1/curr_tau_vec[6]*diag(1,S),
-      1/curr_tau_vec[7]*prec,
-      1/curr_tau_vec[8]*diag(1,S)
-    )                  
-    xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
-    pos_prec <- xtxomg + curr_prec
-    CH <- Cholesky(pos_prec, LDL = FALSE)
-    b <- t(design_mat) %*% kappas
-    # Solve pos_prec %*% x = b for x
-    pos_mu <- solve(CH, b)
-    # pos_mu_2 <- solve(pos_prec, b)
-    curr_theta_vec <- rmvn.sparse(1, mu = pos_mu, CH = CH, prec = TRUE)
-    
-    # Sample taus
-    curr_tau_vec[1] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[1:S])%*%prec%*%curr_theta_vec[1:S]/2) )
-    curr_tau_vec[2] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(S+1):(2*S)])%*%curr_theta_vec[(S+1):(2*S)]/2 ) )
-    
-    curr_tau_vec[3] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(2*S+1):(3*S)])%*%prec%*%curr_theta_vec[(2*S+1):(3*S)]/2 ) )
-    curr_tau_vec[4] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(3*S+1):(4*S)])%*%curr_theta_vec[(3*S+1):(4*S)]/2 ) )
-    
-    curr_tau_vec[5] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(4*S+1):(5*S)])%*%prec%*%curr_theta_vec[(4*S+1):(5*S)] /2) )
-    curr_tau_vec[6] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(5*S+1):(6*S)])%*%curr_theta_vec[(5*S+1):(6*S)]/2 ) )
-    
-    curr_tau_vec[7] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(6*S+1):(7*S)])%*%prec%*%curr_theta_vec[(6*S+1):(7*S)]/2 ) )
-    curr_tau_vec[8] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(7*S+1):(8*S)])%*%curr_theta_vec[(7*S+1):(8*S)]/2 ) )
-    
-    if((curr_idx > burn) & (curr_idx %% thin == 0) ){
-      save_idx <- save_idx + 1
-      all_theta[,save_idx] <- as.vector(curr_theta_vec)
-      all_tau[,save_idx] <-  as.vector(curr_tau_vec)
-    }
+  curr_idx = curr_idx + 1
+  print(curr_idx)
+  # Sample current Omega
+  kappas <- next_y - 1/2
+  curr_phi <- design_mat %*% t(curr_theta_vec)
+  curr_omega <-  rpg(length(next_y), h = 1, z = as.numeric(curr_phi))
+  # Sample current theta
+  curr_prec <- bdiag(
+    1/curr_tau_vec[1]*prec,
+    1/curr_tau_vec[2]*diag(1,S),
+    1/curr_tau_vec[3]*prec,
+    1/curr_tau_vec[4]*diag(1,S),
+    1/curr_tau_vec[5]*prec,
+    1/curr_tau_vec[6]*diag(1,S),
+    1/curr_tau_vec[7]*prec,
+    1/curr_tau_vec[8]*diag(1,S)
+  )                  
+  xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
+  pos_prec <- xtxomg + curr_prec
+  CH <- Cholesky(pos_prec, LDL = FALSE)
+  b <- t(design_mat) %*% kappas
+  # Solve pos_prec %*% x = b for x
+  pos_mu <- solve(CH, b)
+  # pos_mu_2 <- solve(pos_prec, b)
+  curr_theta_vec <- rmvn.sparse(1, mu = pos_mu, CH = CH, prec = TRUE)
+  
+  # Sample taus
+  curr_tau_vec[1] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[1:S])%*%prec%*%curr_theta_vec[1:S]/2) )
+  curr_tau_vec[2] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(S+1):(2*S)])%*%curr_theta_vec[(S+1):(2*S)]/2 ) )
+  
+  curr_tau_vec[3] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(2*S+1):(3*S)])%*%prec%*%curr_theta_vec[(2*S+1):(3*S)]/2 ) )
+  curr_tau_vec[4] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(3*S+1):(4*S)])%*%curr_theta_vec[(3*S+1):(4*S)]/2 ) )
+  
+  curr_tau_vec[5] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(4*S+1):(5*S)])%*%prec%*%curr_theta_vec[(4*S+1):(5*S)] /2) )
+  curr_tau_vec[6] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(5*S+1):(6*S)])%*%curr_theta_vec[(5*S+1):(6*S)]/2 ) )
+  
+  curr_tau_vec[7] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(6*S+1):(7*S)])%*%prec%*%curr_theta_vec[(6*S+1):(7*S)]/2 ) )
+  curr_tau_vec[8] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(7*S+1):(8*S)])%*%curr_theta_vec[(7*S+1):(8*S)]/2 ) )
+  
+  if((curr_idx > burn) & (curr_idx %% thin == 0) ){
+    save_idx <- save_idx + 1
+    all_theta[,save_idx] <- as.vector(curr_theta_vec)
+    all_tau[,save_idx] <-  as.vector(curr_tau_vec)
+    print(curr_tau_vec)
+  }
 }
 saveRDS(all_theta, "theta01_bym.Rda")
 saveRDS(all_tau, "tau01_bym.Rda")
