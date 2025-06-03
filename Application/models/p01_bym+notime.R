@@ -71,7 +71,7 @@ covariates <- Matrix(
 
 # Loop through chunks of rows
 chunk_size <- 1000
-curr_row <- 1
+curr_row <- 2474001
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
@@ -93,9 +93,9 @@ for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   # Convert result matrix to a sparse Matrix format and store in design_mat
   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 }
-
-saveRDS(design_mat,"design_mat_01.Rda")
-design_mat <- readRDS("D:/77/Research/temp/snow/design01.Rda")
+setwd("D:/77/Research/temp/snow/")
+saveRDS(design_mat,"design_01.Rda")
+design_mat <- readRDS("D:/77/Research/temp/snow/design_01.Rda")
 lats_design <- lats[row_idx]
 elev_design <- elev[row_idx]
 
@@ -173,3 +173,4 @@ while(save_idx < tot_samples) {
 setwd("D:/77/Research/temp/snow/")
 saveRDS(all_theta, "theta01_bym+notime.Rda")
 saveRDS(all_tau, "tau01_bym+notime.Rda")
+
