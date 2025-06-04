@@ -70,8 +70,8 @@ covariates <- Matrix(
         location_time_0[,2], location_time_0[,2]), sparse = TRUE )
 
 # # Loop through chunks of rows
-chunk_size <- 1000
-curr_row <- 1
+chunk_size <- 100
+curr_row <- 751001
 for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
   print(start_row)
   # Define the end row for the current chunk
@@ -108,7 +108,7 @@ other_covariates <- Matrix(
         elev_design*sin(2*pi*location_time_0[,2]/period)), sparse = TRUE )
 
 design_mat <- cbind(design_mat, other_covariates)
-tot_samples <- 1000
+tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 8*S + 6, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
@@ -170,5 +170,5 @@ while(save_idx < tot_samples) {
   }
 }
 setwd("D:/77/Research/temp/snow/")
-saveRDS(all_theta[,1:1000], "theta10_bym+notime.Rda")
-saveRDS(all_tau[,1:1000], "tau10_bym+notime.Rda")
+saveRDS(all_theta, "theta10_bym+notime.Rda")
+saveRDS(all_tau, "tau10_bym+notime.Rda")

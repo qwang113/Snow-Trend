@@ -9,8 +9,8 @@ library(spBayes)
 library(elevatr)
 setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
-all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+all_y <- readRDS("snow_cleaned_full.Rda")[-no_nbs,]
+all_y_nnbs <- readRDS("snow_cleaned_full.Rda")[no_nbs,]
 y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
 coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
@@ -111,7 +111,7 @@ for (idx in curr_idx:length(sample_idx)) {
       }
       # For location s, calculate the last year probability for week week_idx
       curr_p0 <- t(c(y[s,1] == 0, y[s,1] == 1))
-      for(t in 1:(week_idx+53*52-1)){
+      for(t in 1:(week_idx+51*52-1)){
         curr_p0 <- curr_p0 %*% P[s,t,,]
       }
       weekly_final_lat_alt[idx, s, week_idx, ] <- curr_p0
