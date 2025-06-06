@@ -19,8 +19,8 @@ setwd("D:/77/Research/temp/snow")
 weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
 weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
 
-weekly_ini_lat_alt <- readRDS("ini_year_bym+withtime.Rda")
-weekly_final_lat_alt <- readRDS("fin_year_bym+withtime.Rda")
+weekly_ini_lat_alt <- readRDS("ini_year_bym+notime.Rda")
+weekly_final_lat_alt <- readRDS("fin_year_bym+notime.Rda")
 
 weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
 weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
@@ -28,15 +28,15 @@ weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
 # weekly_ini_lat_alt_prior_100 <- readRDS("weekly_ini_with_lat+out_prior_100.Rda")
 # weekly_final_lat_alt_prior_100 <- readRDS("weekly_final_with_lat+out_prior_100.Rda")
 
-dpd_snow_diff <- (apply(weekly_final_without_lat_alt[,,,2],c(1,2),sum) - apply(weekly_ini_without_lat_alt[,,,2], c(1,2),sum))/53
+dpd_snow_diff <- (apply(weekly_final_without_lat_alt[,,,2],c(1,2),sum) - apply(weekly_ini_without_lat_alt[,,,2], c(1,2),sum))/51
 dpd_diff_mean_without_lat_alt <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_without_lat_alt <- apply(dpd_snow_diff,2,sd)
 
-dpd_snow_diff <- (apply(weekly_final_lat_alt[1:5,,,2],c(1,2),sum) - apply(weekly_ini_lat_alt[1:5,,,2], c(1,2),sum))/53
+dpd_snow_diff <- (apply(weekly_final_lat_alt[,,,2],c(1,2),sum) - apply(weekly_ini_lat_alt[,,,2], c(1,2),sum))/51
 dpd_diff_mean_lat_alt <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_lat_alt <- apply(dpd_snow_diff,2,sd)
 
-dpd_snow_diff <- (apply(weekly_final_INDEP[,,,2],c(1,2),sum) - apply(weekly_ini_INDEP[,,,2], c(1,2),sum))/53
+dpd_snow_diff <- (apply(weekly_final_INDEP[,,,2],c(1,2),sum) - apply(weekly_ini_INDEP[,,,2], c(1,2),sum))/51
 dpd_diff_mean_INDEP <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_INDEP <- apply(dpd_snow_diff,2,sd)
 
@@ -170,7 +170,7 @@ plot3 <- ggplot() +
 
 plot4 <- ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-  geom_sf(data = dpd_aeqd_without_lat_alt, aes(color = log(dpd_aeqd_without_lat_alt[[2]]) ), size = 2, shape = 18) + # Data points with color mapped
+  geom_sf(data = dpd_aeqd_without_lat_alt, aes(color = log(dpd_aeqd_without_lat_alt$dpd_diff_mean_without_lat_alt) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
   scale_color_viridis_c(option = "C", direction = 1, limits = rg_sd)+
