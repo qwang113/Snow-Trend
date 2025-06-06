@@ -73,7 +73,7 @@ equator_sf <- st_as_sf(equator_points, coords = c("lon", "lat"), crs = 4326)
 equator_aeqd <- st_transform(equator_sf, crs = aeqd_proj)
 
 rg_mean <- range(dpd_diff_mean_INDEP, dpd_diff_mean_lat_alt,dpd_diff_mean_without_lat_alt)
-rg_sd <- log(range(dpd_diff_sd_INDEP, dpd_diff_sd_lat_alt, dpd_diff_sd_without_lat_alt))
+rg_sd <- c(log(unique(sort(c(dpd_diff_sd_INDEP, dpd_diff_sd_lat_alt,dpd_diff_sd_without_lat_alt)))[2]), log(max(c(dpd_diff_sd_INDEP, dpd_diff_sd_lat_alt,dpd_diff_sd_without_lat_alt))))
 
 plot1 <- ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
@@ -170,7 +170,7 @@ plot3 <- ggplot() +
 
 plot4 <- ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) + # World map
-  geom_sf(data = dpd_aeqd_without_lat_alt, aes(color = log(dpd_aeqd_without_lat_alt$dpd_diff_mean_without_lat_alt) ), size = 2, shape = 18) + # Data points with color mapped
+  geom_sf(data = dpd_aeqd_without_lat_alt, aes(color = log(dpd_aeqd_without_lat_alt$dpd_diff_sd_without_lat_alt) ), size = 2, shape = 18) + # Data points with color mapped
   geom_sf(data = world_aeqd, fill = NA, color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) + # Equator
   scale_color_viridis_c(option = "C", direction = 1, limits = rg_sd)+
