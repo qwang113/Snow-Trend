@@ -14,9 +14,9 @@ all_y_nnbs <- readRDS("snow_cleaned_full.Rda")[no_nbs,]
 y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
 coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
-elev <- c(read.csv(here::here("curr_elev.csv"))[,4]
-        ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4])
-lats <- coords[,2]
+elev <- scale(c(read.csv(here::here("curr_elev.csv"))[,4]
+        ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4]))
+lats <- scale(coords[,2])
 
 sample_idx <- seq(from = 204, to = 1000, by = 4)
 
