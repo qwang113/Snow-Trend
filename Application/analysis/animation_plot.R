@@ -10,8 +10,8 @@ library(elevatr)
 
 setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- readRDS("snow_cleaned.Rda")[-no_nbs,]
-all_y_nnbs <- readRDS("snow_cleaned.Rda")[no_nbs,]
+all_y <- readRDS("snow_cleaned_full.Rda")[-no_nbs,]
+all_y_nnbs <- readRDS("snow_cleaned_full.Rda")[no_nbs,]
 y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
 coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
@@ -81,12 +81,10 @@ equator_points <- data.frame(
 # Transform equator points to the azimuthal equidistant projection
 equator_sf <- st_as_sf(equator_points, coords = c("lon", "lat"), crs = 4326) 
 equator_aeqd <- st_transform(equator_sf, crs = aeqd_proj)
-
-wk_names <- substr(names(all_y[3:54]),2,6) 
-wk_names <- sub("^([0-9]+\\.[0-9]+).*", "\\1", wk_names)
+wk_names <- substr(names(all_y[3:54]),6,11) 
 
 month_raw <- substr(wk_names, 1, 2)
-month_num <- as.integer(gsub("\\.", "", month_raw))
+month_num <- as.integer(month_raw)
 month_abbr <- month.abb[month_num]
 
 library(magick)
@@ -266,12 +264,12 @@ gif <- image_read(png_files)                       # Read images
 gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
 image_write(gif, "trend_animation_bym+.gif")            # Save the GIF
 
-special <- c( which(wk_names %in% c("11.27", "1.15","4.1","6.3")))
+special <- c( which(wk_names %in% c("11-27", "01-15","04-02", "06-04")))
 
 trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[1]]], 0.3), -0.3)
 p1 <- ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 3, shape = 18) +
   geom_sf(data = world_aeqd, fill = NA, color = "black") +
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
   scale_color_gradient2(
@@ -303,7 +301,7 @@ p1 <- ggplot() +
 trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_without_lat_alt[[special[2]]], 0.3), -0.3)
 p2 <- ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
+  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 3, shape = 18) +
   geom_sf(data = world_aeqd, fill = NA, color = "black") +
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
   scale_color_gradient2(
