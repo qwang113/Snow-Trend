@@ -18,17 +18,31 @@ elev <- scale(c(read.csv(here::here("curr_elev.csv"))[,4]
         ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4]))
 lats <- scale(coords[,2])
 
-fairbanks_loc <- c(-147.7164,64.8378)
-hokkaido_loc <- c(141.356430,43.061104)
+target_points <- list(
+  # Red trend (negative values)
+  russia_novosibirsk = c(82.9204, 55.0302),
+  china_urumqi = c(87.6168, 43.8256),
+  greenland_nuuk = c(-51.7216, 64.1835),
+  norway_tromso = c(18.9553, 69.6496),
+  usa_fairbanks = c(-147.7164, 64.8378),
+  
+  # Blue trend (positive values)
+  russia_yakutsk = c(129.7331, 62.0355),
+  canada_fort_mcmurray = c(-111.3800, 56.7260),
+  japan_sapporo = c(141.3545, 43.0621),
+  china_dandong = c(124.3547, 40.0005),
+  usa_boston = c(-71.0589, 42.3601)
+)
 
-dists1 <- apply(coords, 1, function(row) sqrt(sum((row - fairbanks_loc)^2)))
-idx1 <- which.min(dists1)
+
+nearest_indices <- sapply(target_points, function(loc) {
+  dists <- apply(coords, 1, function(row) sqrt(sum((row - loc)^2)))
+  which.min(dists)
+})
 
 
-dists2 <- apply(coords, 1, function(row) sqrt(sum((row - hokkaido_loc)^2)))
-idx2 <- which.min(dists2)
 
-ids <- c(idx1,idx2)
+ids <- nearest_indices
 
 
 sample_idx <- seq(from = 204, to = 1000, by = 4)
@@ -88,7 +102,7 @@ alpha_s_hat <- theta_a1s_all + theta_a2s_all
 
 # Transaction Matrix ----------------------------------------------------------------------------Trend
 
-SS <- 2
+SS <- length(ids)
 TT <- dim(y)[2]
 period <- 52
 
@@ -109,7 +123,7 @@ for (idx in curr_idx:length(sample_idx)) {
     P[, time, 2, 1] <- inv_logit(beta_0s_hat[,idx] + beta_1s_hat[,idx] * cos(2*pi*time/period) + beta_2s_hat[,idx] * sin(2*pi*time/period)+ alpha_s_hat[,idx] * time)
     P[, time, 2, 2] <- 1 - P[, time, 2, 1]
   }
-  for (s in 1:2) {
+  for (s in 1:SS) {
     curr_idx <- ids[s]
     curr_p0 <- t(c(y[curr_idx,1] == 0, y[curr_idx,1] == 1))
     for(t in 1:(TT-1)){
@@ -121,7 +135,7 @@ for (idx in curr_idx:length(sample_idx)) {
 
 num_groups <- dim(weekly_pred_lat_alt)[3] / 52
 
-summed_array <- array(0, dim = c(200, 2, num_groups))
+summed_array <- array(0, dim = c(200, length(ids), num_groups))
 
 for (i in 1:num_groups) {
   idx_start <- (i - 1) * 52 + 1
@@ -144,10 +158,11 @@ library(dplyr)
 library(tidyr)
 
 # Combine both locations
-locations <- c("Fairbanks", "Hokkaido")
+locations <- names(target_points)
 plots <- list()
 
-for (i in 1:2) {
+for (i in 1:SS) {
+  print(i)
   pred_samples <- summed_array[, i, ]
   pred_df <- as.data.frame(t(pred_samples))
   colnames(pred_df) <- paste0("draw_", 1:200)
@@ -167,19 +182,20 @@ for (i in 1:2) {
   p <- ggplot(summary_df, aes(x = year)) +
     geom_ribbon(aes(ymin = lower, ymax = upper), fill = "blue", alpha = 0.2) +
     geom_line(aes(y = mean), color = "blue", linewidth = 1) +
-    geom_point(aes(y = truth), color = "red", size = 2) +
+    geom_line(aes(y = truth), color = "red", size = 0.8) +
     labs(
-      title = paste("Predicted vs Observed in", locations[i], "(with 95% CI)"),
+      title = paste(locations[i]),
       x = "Year",
-      y = "Summed Value"
+      y = "Number of Snowy Weeks"
     ) +
+    # lims(y = c(0,52)) +
     theme_minimal()
   
   plots[[i]] <- p
 }
 
 # Display both plots
-cowplot::plot_grid(plots[[1]],plots[[2]])
+cowplot::plot_grid(plotlist = plots, nrow = 2)
 
 
 
