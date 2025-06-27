@@ -107,7 +107,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean for Week (No Covariates)",wk_names[i]),
+      title = paste("Trend Mean (BYM) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -129,7 +129,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0, 0.18)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd for Week (No Covariates)",wk_names[i]),
+      title = paste("Trend sd (BYM) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -158,7 +158,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean (with Lat+Alt) for Week", wk_names[i]),
+      title = paste("Trend Mean (BYM+) for Week", wk_names[i]),
       color = ""
     ) +
     annotate("text", x = -7000000, y = -1000000, label = month_abbr[i], size = 20) +
@@ -181,7 +181,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0,0.18)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd (with Lat+Alt) for Week",wk_names[i]),
+      title = paste("Trend sd (BYM+) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -209,7 +209,7 @@ for (i in 2:52) {
     ) +
     theme_minimal() +
     labs(
-      title = paste("Trend Mean (Independent) for Week",wk_names[i]),
+      title = paste("Trend Mean (IND) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -231,7 +231,7 @@ for (i in 2:52) {
     scale_color_viridis_c(option = "C", direction = -1, limits = c(0,0.18)) + # Vibrant color palette
     theme_minimal() +
     labs(
-      title = paste("Trend sd (Independent) for Week",wk_names[i]),
+      title = paste("Trend sd (IND) for Week",wk_names[i]),
       color = ""
     ) +
     theme(
@@ -246,8 +246,8 @@ for (i in 2:52) {
     )
   
   
-  plot = cowplot::plot_grid(plot5,plot1, nrow = 2)
-  # plot = plot3
+  # plot = cowplot::plot_grid(plot5,plot1, nrow = 2)
+  plot = plot3
   # Save the plot
   ggsave(
     filename = paste0("plot_",i, ".png"), # Save as plot_1.png, plot_2.png, ...
@@ -264,138 +264,86 @@ gif <- image_read(png_files)                       # Read images
 gif <- image_animate(gif, fps = 5)                 # Set frames per second (5 fps)
 image_write(gif, "trend_animation_bym+.gif")            # Save the GIF
 
-special <- c( which(wk_names %in% c("11-27", "01-15","04-02", "06-04")))
+special <- c( which(wk_names %in% c("11-20", "12-25","04-23", "06-04")))
 
-trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[1]]], 0.3), -0.3)
-p1 <- ggplot() +
-  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 3, shape = 18) +
-  geom_sf(data = world_aeqd, fill = NA, color = "black") +
-  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
-  scale_color_gradient2(
-    low = "red",         
-    mid = "white",       
-    high = "blue",        
-    midpoint = 0,
-    limits = c(-0.3, 0.3),
-    guide = "colourbar"
-  ) +
-  theme_minimal() +
-  labs(
-    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[1]]),
-    color = ""
-  ) +
-  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[1]], size = 20) +
-  theme(
-    legend.position = "bottom",
-    plot.title = element_text(hjust = 0.5)
-  ) +
-  guides(
-    color = guide_colorbar(
-      barwidth = 20,
-      barheight = 0.5
-    )
+plot_list <- list()
+
+for (i in 1:4) {
+  trend_aeqd_lat_alt$color_val <- pmax(
+    pmin(trend_aeqd_lat_alt[[special[i]]], 0.3), 
+    -0.3
   )
-
-
-trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_without_lat_alt[[special[2]]], 0.3), -0.3)
-p2 <- ggplot() +
-  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 3, shape = 18) +
-  geom_sf(data = world_aeqd, fill = NA, color = "black") +
-  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
-  scale_color_gradient2(
-    low = "red",         
-    mid = "white",       
-    high = "blue",        
-    midpoint = 0,
-    limits = c(-0.3, 0.3),
-    guide = "colourbar"
-  ) +
-  theme_minimal() +
-  labs(
-    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[2]]),
-    color = ""
-  ) +
-  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[2]], size = 20) +
-  theme(
-    legend.position = "bottom",
-    plot.title = element_text(hjust = 0.5)
-  ) +
-  guides(
-    color = guide_colorbar(
-      barwidth = 20,
-      barheight = 0.5
+  
+  p <- ggplot() +
+    geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
+    geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = ifelse(i <= 2, 3, 4), shape = 18) +
+    geom_sf(data = world_aeqd, fill = NA, color = "black") +
+    geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
+    scale_color_gradient2(
+      low = "red",
+      mid = "white",
+      high = "blue",
+      midpoint = 0,
+      limits = c(-0.3, 0.3),
+      guide = "colourbar"
+    ) +
+    theme_minimal() +
+    labs(
+      title = paste("Trend Mean (with Covariates) for Week", wk_names[special[i]]),
+      color = ""
+    ) +
+    annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[i]], size = 20) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(hjust = 0.5)
+    ) +
+    guides(
+      color = guide_colorbar(
+        barwidth = 20,
+        barheight = 0.5
+      )
     )
-  )
+  
+  plot_list[[i]] <- p
+}
 
-trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[3]]], 0.3), -0.3)
-p3 <- ggplot() +
-  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
-  geom_sf(data = world_aeqd, fill = NA, color = "black") +
-  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
-  scale_color_gradient2(
-    low = "red",         
-    mid = "white",       
-    high = "blue",        
-    midpoint = 0,
-    limits = c(-0.3, 0.3),
-    guide = "colourbar"
-  ) +
-  theme_minimal() +
-  labs(
-    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[3]]),
-    color = ""
-  ) +
-  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[3]], size = 20) +
-  theme(
-    legend.position = "bottom",
-    plot.title = element_text(hjust = 0.5)
-  ) +
-  guides(
-    color = guide_colorbar(
-      barwidth = 20,
-      barheight = 0.5
-    )
-  )
-
-
-trend_aeqd_lat_alt$color_val <- pmax(pmin(trend_aeqd_lat_alt[[special[4]]], 0.3), -0.3)
-p4 <- ggplot() +
-  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = trend_aeqd_lat_alt, aes(color = color_val), size = 4, shape = 18) +
-  geom_sf(data = world_aeqd, fill = NA, color = "black") +
-  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
-  scale_color_gradient2(
-    low = "red",         
-    mid = "white",       
-    high = "blue",        
-    midpoint = 0,
-    limits = c(-0.3, 0.3),
-    guide = "colourbar"
-  ) +
-  theme_minimal() +
-  labs(
-    title = paste("Trend Mean (with Covariates) for Week", wk_names[special[4]]),
-    color = ""
-  ) +
-  annotate("text", x = -7000000, y = -1000000, label = month_abbr[special[4]], size = 20) +
-  theme(
-    legend.position = "bottom",
-    plot.title = element_text(hjust = 0.5)
-  ) +
-  guides(
-    color = guide_colorbar(
-      barwidth = 20,
-      barheight = 0.5
-    )
-  )
-
-plot(density(diff_mean_INDEP[,-1]))
-lines(density(diff_mean_without_lat_alt[,-1]), col = "blue")
-lines(density(diff_mean_lat_alt[,-1]), col = "red")
-
-cowplot::plot_grid(p1,p2, nrow = 1)
+cowplot::plot_grid(plot_list[[3]], plot_list[[4]], nrow = 1)
 cowplot::plot_grid(p3,p4, nrow = 1)
+
+
+
+
+# Plots for March 1-7,1990
+
+
+one_point <- st_as_sf(data.frame(cbind(coords, y[,which(substr(names(y),1,7) == "1990-03")[1]])), coords = c("LON", "LAT"), crs = 4326)
+one_point <- st_transform(one_point, crs = aeqd_proj)
+names(one_point)[1] <- "snow_coverage"
+
+ggplot() +
+  geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
+  geom_sf(data = one_point, aes(color = as.factor(snow_coverage))) +
+  geom_sf(data = world_aeqd, fill = NA, color = "black") +
+  geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
+  scale_color_manual(
+    values = c("0" = "steelblue4", "1" = "ivory"),
+    labels = c("No Snow", "Snow"),
+    name = NULL
+  ) +
+  theme_minimal() +
+  labs(
+    title = paste("Snow Coverage for Week", names(y)[which(substr(names(y),1,7) == "1990-03")[1]])
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 4))
+  )
+
+
+
+
+
 

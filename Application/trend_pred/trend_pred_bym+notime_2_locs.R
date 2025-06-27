@@ -21,17 +21,17 @@ lats <- scale(coords[,2])
 target_points <- list(
   # Red trend (negative values)
   russia_novosibirsk = c(82.9204, 55.0302),
-  china_urumqi = c(87.6168, 43.8256),
-  greenland_nuuk = c(-51.7216, 64.1835),
-  norway_tromso = c(18.9553, 69.6496),
-  usa_fairbanks = c(-147.7164, 64.8378),
+  # china_urumqi = c(87.6168, 43.8256),
+  # greenland_nuuk = c(-51.7216, 64.1835),
+  # norway_tromso = c(18.9553, 69.6496),
+  # usa_fairbanks = c(-147.7164, 64.8378),
   
   # Blue trend (positive values)
-  russia_yakutsk = c(129.7331, 62.0355),
-  canada_fort_mcmurray = c(-111.3800, 56.7260),
-  japan_sapporo = c(141.3545, 43.0621),
-  china_dandong = c(124.3547, 40.0005),
-  usa_boston = c(-71.0589, 42.3601)
+  # russia_yakutsk = c(129.7331, 62.0355),
+  # canada_fort_mcmurray = c(-111.3800, 56.7260),
+  # japan_sapporo = c(141.3545, 43.0621),
+  china_dandong = c(124.3547, 40.0005)
+  # usa_boston = c(-71.0589, 42.3601)
 )
 
 
@@ -98,7 +98,43 @@ beta_1s_hat <- theta_11s_all + theta_12s_all + lats[ids]%*%t(theta_1Ls_all) + el
 beta_2s_hat <- theta_21s_all + theta_22s_all + lats[ids]%*%t(theta_2Ls_all) + elev[ids]%*%t(theta_2As_all)
 alpha_s_hat <- theta_a1s_all + theta_a2s_all
 
+coefs <- round(
+  rbind(
+    cbind(
+      apply(beta_0_hat, 1, median),
+      apply(beta_1_hat, 1, median),
+      apply(beta_2_hat, 1, median),
+      apply(alpha_hat, 1, median),
+      apply(beta_0s_hat, 1, median),
+      apply(beta_1s_hat, 1, median),
+      apply(beta_2s_hat, 1, median),
+      apply(alpha_s_hat, 1, median)
+    ),
+    cbind(
+      apply(beta_0_hat, 1, quantile,0.025 ),
+      apply(beta_1_hat, 1, quantile,0.025 ),
+      apply(beta_2_hat, 1, quantile,0.025 ),
+      apply(alpha_hat, 1, quantile,0.025 ),
+      apply(beta_0s_hat, 1, quantile,0.025 ),
+      apply(beta_1s_hat, 1, quantile,0.025 ),
+      apply(beta_2s_hat, 1, quantile,0.025 ),
+      apply(alpha_s_hat, 1, quantile,0.025 )
+    ),
+    cbind(
+      apply(beta_0_hat, 1, quantile,0.975 ),
+      apply(beta_1_hat, 1, quantile,0.975 ),
+      apply(beta_2_hat, 1, quantile,0.975 ),
+      apply(alpha_hat, 1, quantile,0.975 ),
+      apply(beta_0s_hat, 1, quantile,0.975 ),
+      apply(beta_1s_hat, 1, quantile,0.975 ),
+      apply(beta_2s_hat, 1, quantile,0.975 ),
+      apply(alpha_s_hat, 1, quantile,0.975 )
+    )
+  )
+,6)
 
+colnames(coefs) <- c(1:8)
+knitr::kable(coefs, format = "latex")
 
 # Transaction Matrix ----------------------------------------------------------------------------Trend
 
@@ -158,15 +194,14 @@ library(dplyr)
 library(tidyr)
 
 # Combine both locations
-locations <- names(target_points)
+locations <- c("Russia - Novosibirsk","China - Dandong")
 plots <- list()
 
 for (i in 1:SS) {
-  print(i)
   pred_samples <- summed_array[, i, ]
   pred_df <- as.data.frame(t(pred_samples))
   colnames(pred_df) <- paste0("draw_", 1:200)
-  pred_df$year <- 1:52
+  pred_df$year <- 1972:(1972+52-1)
   
   summary_df <- pred_df %>%
     pivot_longer(cols = starts_with("draw_"), names_to = "draw", values_to = "value") %>%
@@ -174,28 +209,45 @@ for (i in 1:SS) {
     summarise(
       mean = mean(value),
       lower = quantile(value, 0.025),
-      upper = quantile(value, 0.975)
+      upper = quantile(value, 0.975),
+      .groups = "drop"
     )
   
   summary_df$truth <- summed_y[i, ]
   
-  p <- ggplot(summary_df, aes(x = year)) +
-    geom_ribbon(aes(ymin = lower, ymax = upper), fill = "blue", alpha = 0.2) +
-    geom_line(aes(y = mean), color = "blue", linewidth = 1) +
-    geom_line(aes(y = truth), color = "red", size = 0.8) +
+  summary_df_long <- summary_df %>%
+    pivot_longer(cols = c(mean, truth), names_to = "Type", values_to = "Value")
+  
+  p <- ggplot(summary_df_long, aes(x = year)) +
+    geom_ribbon(
+      data = summary_df,
+      aes(x = year, ymin = lower, ymax = upper),
+      inherit.aes = FALSE, fill = "blue", alpha = 0.2
+    ) +
+    geom_line(aes(y = Value, color = Type), linewidth = 1) +
+    scale_color_manual(
+      values = c("truth" = "red", "mean" = "blue"),
+      labels = c("truth" = "Truth", "mean" = "Prediction")
+    ) +
     labs(
       title = paste(locations[i]),
       x = "Year",
-      y = "Number of Snowy Weeks"
+      y = "Number of Snowy Weeks",
+      color = NULL
     ) +
-    # lims(y = c(0,52)) +
-    theme_minimal()
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  if (i != SS) {
+    p <- p + theme(legend.position = "none")
+  } else {
+    p <- p + theme(legend.position = "bottom")
+  }
   
   plots[[i]] <- p
 }
 
-# Display both plots
-cowplot::plot_grid(plotlist = plots, nrow = 2)
+wrap_plots(plots, nrow = 2)
 
 
 
