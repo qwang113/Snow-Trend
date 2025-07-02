@@ -326,7 +326,7 @@ ggplot() +
   geom_sf(data = world_aeqd, fill = NA, color = "black") +
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
   scale_color_manual(
-    values = c("0" = "steelblue4", "1" = "ivory"),
+    values = c("0" = "green", "1" = "blue"),
     labels = c("No Snow", "Snow"),
     name = NULL
   ) +

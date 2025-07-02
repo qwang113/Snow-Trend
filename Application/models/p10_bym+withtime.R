@@ -16,12 +16,12 @@ library(pbapply)
 library(sparseMVN) 
 setwd(here::here())
 no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989, 1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-all_y <- rbind(readRDS("snow_cleaned.Rda")[-no_nbs,],readRDS("snow_cleaned.Rda")[no_nbs,])
+all_y <- rbind(readRDS("snow_cleaned_full.Rda")[-no_nbs,],readRDS("snow_cleaned_full.Rda")[no_nbs,])
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
-elev <- c(read.csv(here::here("curr_elev.csv"))[,4],
-          read.csv(here::here("nnbs_elev.csv"),sep = "\t", row.names = NULL)[,4])
-lats <- coords[,2]
+elev <- scale(c(read.csv(here::here("curr_elev.csv"))[,4],
+          read.csv(here::here("nnbs_elev.csv"),sep = "\t", row.names = NULL)[,4]))
+lats <- scale(coords[,2])
 S <- nrow(y)
 TT <- ncol(y)
 sf_coords <- st_as_sf(data.frame(coords), coords = c("LON", "LAT"), crs = 4326)
@@ -112,7 +112,7 @@ other_covariates <- Matrix(
         ), sparse = TRUE )
 
 design_mat <- cbind(design_mat, other_covariates)
-tot_samples <- 1000
+tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 8*S + 8, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
