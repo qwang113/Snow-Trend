@@ -14,13 +14,18 @@ y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 coords_nnbs <- readRDS(here::here("snow_cleaned.Rda"))[no_nbs,1:2]
 coords <- rbind(coords, coords_nnbs)
+
+elev <- scale(c(read.csv(here::here("curr_elev.csv"))[,4]
+                ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4]))
+lats <- scale(coords[,2])
+
 # First year
 setwd("D:/77/Research/temp/snow")
 weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
 weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
 
-weekly_ini_lat_alt <- readRDS("ini_year_bym+notime.Rda")
-weekly_final_lat_alt <- readRDS("fin_year_bym+notime.Rda")
+weekly_ini_lat_alt <- readRDS("ini_year_bym+withtime.Rda")
+weekly_final_lat_alt <- readRDS("fin_year_bym+withtime.Rda")
 
 weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
 weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
@@ -361,3 +366,13 @@ c(table(dpd_diff_mean_lat_alt < 0),
 colnames(tb) <- c("Increase","Decrease","Mean","Median","SD","Z-Score Mean","z>2","z<-2")
 rownames(tb) <- c("IND","BYM","BYM+")
 knitr::kable(tb, align = 'c', format = "latex")
+
+
+
+# Trend Elevation + Latitude Regression
+
+M1 <- lm(dpd_diff_mean_without_lat_alt ~ lats + elev)
+sm1 <- summary(M1)
+knitr::kable(sm1$coefficients, format = "latex", digits = 5)
+
+
