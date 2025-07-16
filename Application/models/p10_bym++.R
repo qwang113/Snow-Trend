@@ -54,9 +54,9 @@ D <- Matrix(diag(rowSums(Omg)) ,sparse = TRUE)
 sigma = 1
 period = 52
 
-location_time_0 <- which(y[,-ncol(y)]==0, arr.ind =  TRUE)
+location_time_0 <- which(y[,-ncol(y)]==1, arr.ind =  TRUE)
 row_idx <- location_time_0[,1]
-next_y <- y[cbind(location_time_0[,1], location_time_0[,2]+1)]
+next_y <- abs(y[cbind(location_time_0[,1], location_time_0[,2]+1)] - 1)
 design_mat <- Matrix(0, nrow = length(next_y), ncol = 12*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
 
@@ -64,15 +64,15 @@ lats_design <- lats[row_idx]
 elev_design <- elev[row_idx]
 
 # pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
-covariates <- Matrix(
-  cbind(1,1,
-        cos(2*pi*location_time_0[,2]/period),
-        cos(2*pi*location_time_0[,2]/period),
-        sin(2*pi*location_time_0[,2]/period), 
-        sin(2*pi*location_time_0[,2]/period), 
-        location_time_0[,2], location_time_0[,2],
-        elev_design, elev_design,
-        lats_design,lats_design), sparse = TRUE )
+# covariates <- Matrix(
+#   cbind(1,1,
+#         cos(2*pi*location_time_0[,2]/period),
+#         cos(2*pi*location_time_0[,2]/period),
+#         sin(2*pi*location_time_0[,2]/period), 
+#         sin(2*pi*location_time_0[,2]/period), 
+#         location_time_0[,2], location_time_0[,2],
+#         elev_design, elev_design,
+#         lats_design,lats_design), sparse = TRUE )
 
 # Loop through chunks of rows
 # chunk_size <- 1000
@@ -99,32 +99,23 @@ covariates <- Matrix(
 #   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 # }
 setwd("D:/77/Research/temp/snow/")
-design_mat <- readRDS("D:/77/Research/temp/snow/design01.Rda")
-design_elev = design_lat <- Matrix(0, nrow = length(next_y), ncol = S, sparse = TRUE)
-
-idxs <- which(design_mat[,1:S]!=0, arr.ind = T)
-permutated_idx <- idxs[order(idxs[,1]),]
-design_lat[permutated_idx] <- lats_design
-design_elev[permutated_idx] <- elev_design
-design_mat <- cbind(design_mat, design_elev, design_elev, design_lat, design_lat)
+design_mat <- readRDS("D:/77/Research/temp/snow/design10.Rda")
+design_mat <- cbind(design_mat, elev_design, lats_design)
 
 
-# DT <- design_mat[,(1618*2+1):(1618*3)]
-# which(DT[permutated_idx] != cos(2*pi*location_time_0[,2]/period)) 
- 
 tot_samples <- 2000
 
-all_theta <- matrix(NA, nrow = 12*S, ncol = tot_samples)
-all_tau <- matrix(NA, nrow = 12, ncol = tot_samples)
-curr_theta_vec <- matrix(0, nrow = 1, ncol = 12*S)
-curr_tau_vec <- rep(1,12)
+all_theta <- matrix(NA, nrow = 8*S+2, ncol = tot_samples)
+all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
+curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S+2)
+curr_tau_vec <- rep(1,8)
 a_tau <- 0.001
 b_tau <- 0.001
 curr_idx <- 0
 save_idx <- 0
 burn = 0
 thin = 1
-prec <- D - Omg 
+prec <- D - Omg
 
 while(save_idx < tot_samples) {
   curr_idx = curr_idx + 1
@@ -143,13 +134,10 @@ while(save_idx < tot_samples) {
     1/curr_tau_vec[6]*diag(1,S),
     1/curr_tau_vec[7]*prec,
     1/curr_tau_vec[8]*diag(1,S),
-    1/curr_tau_vec[9]*prec,
-    1/curr_tau_vec[10]*diag(1,S),
-    1/curr_tau_vec[11]*prec,
-    1/curr_tau_vec[12]*diag(1,S)
+    1/100*diag(1,2)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
-  pos_prec <- xtxomg + curr_prec 
+  pos_prec <- xtxomg + curr_prec
   CH <- Cholesky(pos_prec, LDL = FALSE)
   b <- t(design_mat) %*% kappas
   # Solve pos_prec %*% x = b for x
@@ -170,15 +158,9 @@ while(save_idx < tot_samples) {
   curr_tau_vec[7] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(6*S+1):(7*S)])%*%prec%*%curr_theta_vec[(6*S+1):(7*S)]/2 ) )
   curr_tau_vec[8] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(7*S+1):(8*S)])%*%curr_theta_vec[(7*S+1):(8*S)]/2 ) )
   
-  curr_tau_vec[9] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(8*S+1):(9*S)])%*%prec%*%curr_theta_vec[(8*S+1):(9*S)]/2 ) )
-  curr_tau_vec[10] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(9*S+1):(10*S)])%*%curr_theta_vec[(9*S+1):(10*S)]/2 ) )
-  
-  curr_tau_vec[11] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(10*S+1):(11*S)])%*%prec%*%curr_theta_vec[(10*S+1):(11*S)]/2 ) )
-  curr_tau_vec[12] <- 1/rgamma(1, shape = a_tau+S/2, rate = as.numeric(b_tau + t(curr_theta_vec[(11*S+1):(12*S)])%*%curr_theta_vec[(11*S+1):(12*S)]/2 ) )
-  
-  
   if((curr_idx > burn) & (curr_idx %% thin == 0) ){
     save_idx <- save_idx + 1
+    
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
     all_tau[,save_idx] <-  as.vector(curr_tau_vec)
     print(curr_tau_vec)
@@ -186,6 +168,6 @@ while(save_idx < tot_samples) {
 }
 
 setwd("D:/77/Research/temp/snow/")
-saveRDS(all_theta, "theta01_bym#.Rda")
-saveRDS(all_tau, "tau01_bym#.Rda")
+saveRDS(all_theta, "theta10_bym++.Rda")
+saveRDS(all_tau, "tau10_bym++.Rda")
 

@@ -54,7 +54,7 @@ D <- Matrix(diag(rowSums(Omg)) ,sparse = TRUE)
 sigma = 1
 period = 52
 
-location_time_0 <- which(y[,-ncol(y)]==0, arr.ind =  TRUE)
+location_time_0 <- which(y[,-ncol(y)]==1, arr.ind =  TRUE)
 row_idx <- location_time_0[,1]
 next_y <- y[cbind(location_time_0[,1], location_time_0[,2]+1)]
 design_mat <- Matrix(0, nrow = length(next_y), ncol = 12*S, sparse = TRUE)
@@ -75,43 +75,40 @@ covariates <- Matrix(
         lats_design,lats_design), sparse = TRUE )
 
 # Loop through chunks of rows
-# chunk_size <- 1000
-# curr_row <- 1
-# for (start_row in seq(curr_row , 5000, by = chunk_size)) {
-#   print(start_row)
-#   # Define the end row for the current chunk
-#   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
-# 
-#   # Extract the relevant rows from location_idx and covariates
-#   loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
-#   cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
-# 
-#   # Apply the outer product to each pair of rows in the chunk
-#   # mapply to compute the outer product for each pair of rows
-#   result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
-#                          split(loc_chunk, row(loc_chunk)),
-#                          split(cov_chunk, row(cov_chunk)))
-# 
-#   # Reshape result to match design matrix row structure
-#   result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
-# 
-#   # Convert result matrix to a sparse Matrix format and store in design_mat
-#   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
-# }
+chunk_size <- 1000
+curr_row <- 1
+for (start_row in seq(curr_row , 5000, by = chunk_size)) {
+  print(start_row)
+  # Define the end row for the current chunk
+  end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
+
+  # Extract the relevant rows from location_idx and covariates
+  loc_chunk <- location_idx[start_row:end_row, , drop = FALSE]
+  cov_chunk <- covariates[start_row:end_row, , drop = FALSE]
+
+  # Apply the outer product to each pair of rows in the chunk
+  # mapply to compute the outer product for each pair of rows
+  result_chunk <- mapply(function(loc, cov) as.vector(outer(loc, cov, "*")),
+                         split(loc_chunk, row(loc_chunk)),
+                         split(cov_chunk, row(cov_chunk)))
+
+  # Reshape result to match design matrix row structure
+  result_matrix <- matrix(result_chunk, nrow = end_row - start_row + 1, byrow = TRUE)
+
+  # Convert result matrix to a sparse Matrix format and store in design_mat
+  design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
+}
 setwd("D:/77/Research/temp/snow/")
-design_mat <- readRDS("D:/77/Research/temp/snow/design01.Rda")
+tmp_design_mat <- readRDS("D:/77/Research/temp/snow/design10.Rda")
 design_elev = design_lat <- Matrix(0, nrow = length(next_y), ncol = S, sparse = TRUE)
 
-idxs <- which(design_mat[,1:S]!=0, arr.ind = T)
+idxs <- which(tmp_design_mat[,1:S]!=0, arr.ind = T)
 permutated_idx <- idxs[order(idxs[,1]),]
 design_lat[permutated_idx] <- lats_design
 design_elev[permutated_idx] <- elev_design
-design_mat <- cbind(design_mat, design_elev, design_elev, design_lat, design_lat)
+tmp_design_mat <- cbind(tmp_design_mat, design_elev, design_elev, design_lat, design_lat)
 
 
-# DT <- design_mat[,(1618*2+1):(1618*3)]
-# which(DT[permutated_idx] != cos(2*pi*location_time_0[,2]/period)) 
- 
 tot_samples <- 2000
 
 all_theta <- matrix(NA, nrow = 12*S, ncol = tot_samples)
@@ -124,7 +121,7 @@ curr_idx <- 0
 save_idx <- 0
 burn = 0
 thin = 1
-prec <- D - Omg 
+prec <- D - Omg
 
 while(save_idx < tot_samples) {
   curr_idx = curr_idx + 1
@@ -149,7 +146,7 @@ while(save_idx < tot_samples) {
     1/curr_tau_vec[12]*diag(1,S)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
-  pos_prec <- xtxomg + curr_prec 
+  pos_prec <- xtxomg + curr_prec + Diagonal(nrow(xtxomg), 1e-9)
   CH <- Cholesky(pos_prec, LDL = FALSE)
   b <- t(design_mat) %*% kappas
   # Solve pos_prec %*% x = b for x
@@ -179,6 +176,7 @@ while(save_idx < tot_samples) {
   
   if((curr_idx > burn) & (curr_idx %% thin == 0) ){
     save_idx <- save_idx + 1
+    
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
     all_tau[,save_idx] <-  as.vector(curr_tau_vec)
     print(curr_tau_vec)
@@ -186,6 +184,6 @@ while(save_idx < tot_samples) {
 }
 
 setwd("D:/77/Research/temp/snow/")
-saveRDS(all_theta, "theta01_bym#.Rda")
-saveRDS(all_tau, "tau01_bym#.Rda")
+saveRDS(all_theta, "theta10_bym#.Rda")
+saveRDS(all_tau, "tau10_bym#.Rda")
 
