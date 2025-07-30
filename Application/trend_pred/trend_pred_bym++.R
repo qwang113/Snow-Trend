@@ -131,3 +131,13 @@ for (idx in curr_idx:length(sample_idx)) {
 setwd("D:/77/Research/temp/snow/")
 saveRDS(weekly_ini_lat_alt, "ini_year_bym++.Rda")
 saveRDS(weekly_final_lat_alt, "fin_year_bym++.Rda")
+
+
+lats_summary <- c(mean(theta_L_all),quantile(theta_L_all,0.025), median(theta_L_all), quantile(theta_L_all,0.975))
+lats_s_summary <- c(mean(theta_Ls_all),quantile(theta_Ls_all,0.025), median(theta_Ls_all), quantile(theta_Ls_all,0.975))
+elev_summary <- c(mean(theta_E_all),quantile(theta_E_all,0.025), median(theta_E_all), quantile(theta_E_all,0.975))
+elev_s_summary <- c(mean(theta_Es_all),quantile(theta_Es_all,0.025), median(theta_Es_all), quantile(theta_Es_all,0.975))
+tb <- rbind(lats_summary, lats_s_summary, elev_summary, elev_s_summary)
+rownames(tb) <- c("beta_4","beta_4","beta_5","beta_5")
+colnames(tb) <- c("Mean","Lower","Median","Upper")
+knitr::kable(tb, format = "latex", digits = 4)

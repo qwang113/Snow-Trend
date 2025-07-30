@@ -21,17 +21,17 @@ lats <- scale(coords[,2])
 target_points <- list(
   # Red trend (negative values)
   russia_novosibirsk = c(82.9204, 55.0302),
-  china_urumqi = c(87.6168, 43.8256),
-  greenland_nuuk = c(-51.7216, 64.1835),
-  norway_tromso = c(18.9553, 69.6496),
-  usa_fairbanks = c(-147.7164, 64.8378),
+  # china_urumqi = c(87.6168, 43.8256),
+  # greenland_nuuk = c(-51.7216, 64.1835),
+  # norway_tromso = c(18.9553, 69.6496),
+  # usa_fairbanks = c(-147.7164, 64.8378),
   
   # Blue trend (positive values)
-  russia_yakutsk = c(129.7331, 62.0355),
-  canada_fort_mcmurray = c(-111.3800, 56.7260),
-  japan_sapporo = c(141.3545, 43.0621),
-  china_dandong = c(124.3547, 40.0005),
-  usa_boston = c(-71.0589, 42.3601)
+  # russia_yakutsk = c(129.7331, 62.0355),
+  # canada_fort_mcmurray = c(-111.3800, 56.7260),
+  # japan_sapporo = c(141.3545, 43.0621),
+  china_dandong = c(124.3547, 40.0005)
+  # usa_boston = c(-71.0589, 42.3601)
 )
 
 
@@ -50,8 +50,8 @@ sample_idx <- seq(from = 204, to = 1000, by = 4)
 setwd("D:/77/Research/temp/snow/")
 
 
-theta <- readRDS("theta01_bym#.Rda")[,sample_idx]
-theta_s <- readRDS("theta10_bym#.Rda")[,sample_idx]
+theta <- readRDS("theta01_bym.Rda")[,sample_idx]
+theta_s <- readRDS("theta10_bym.Rda")[,sample_idx]
 S <- nrow(y)
 
 theta_01_all <- theta[ids,]
@@ -62,10 +62,7 @@ theta_21_all <- theta[4*S+ids,]
 theta_22_all <- theta[5*S+ids,]
 theta_a1_all <- theta[6*S+ids,]
 theta_a2_all <- theta[7*S+ids,]
-theta_E1_all <- theta[8*S+ids,]
-theta_E2_all <- theta[9*S+ids,]
-theta_L1_all <- theta[10*S+ids,]
-theta_L2_all <- theta[11*S+ids,]
+
 
 
 theta_01s_all <- theta_s[ids,]
@@ -76,10 +73,6 @@ theta_21s_all <- theta_s[4*S+ids,]
 theta_22s_all <- theta_s[5*S+ids,]
 theta_a1s_all <- theta_s[6*S+ids,]
 theta_a2s_all <- theta_s[7*S+ids,]
-theta_E1s_all <- theta_s[8*S+ids,]
-theta_E2s_all <- theta_s[9*S+ids,]
-theta_L1s_all <- theta_s[10*S+ids,]
-theta_L2s_all <- theta_s[11*S+ids,]
 
 
 
@@ -87,8 +80,7 @@ beta_0_hat <- theta_01_all + theta_02_all
 beta_1_hat <- theta_11_all + theta_12_all
 beta_2_hat <- theta_21_all + theta_22_all
 alpha_hat <- theta_a1_all + theta_a2_all
-beta_E_hat <- theta_E1_all + theta_E2_all
-beta_L_hat <- theta_L1_all + theta_L2_all
+
 
 
 
@@ -96,8 +88,7 @@ beta_0s_hat <- theta_01s_all + theta_02s_all
 beta_1s_hat <- theta_11s_all + theta_12s_all
 beta_2s_hat <- theta_21s_all + theta_22s_all
 alpha_s_hat <- theta_a1s_all + theta_a2s_all
-beta_Es_hat <- theta_E1s_all + theta_E2s_all
-beta_Ls_hat <- theta_L1s_all + theta_L2s_all
+
 
 coefs <- round(
   rbind(
@@ -155,9 +146,9 @@ curr_idx <- 1
 for (idx in curr_idx:length(sample_idx)) {
   for (time in 1:(TT-1)) {
     P[, time, 1, 2] <- inv_logit(
-      beta_0_hat[,idx] + beta_1_hat[,idx] * cos(2*pi*time/period) + beta_2_hat[,idx] * sin(2*pi*time/period) + alpha_hat[,idx] * time + lats[ids]*beta_L_hat[,idx] + elev[ids]*beta_E_hat[,idx])
+      beta_0_hat[,idx] + beta_1_hat[,idx] * cos(2*pi*time/period) + beta_2_hat[,idx] * sin(2*pi*time/period) + alpha_hat[,idx] * time )
     P[, time, 1, 1] <- 1 - P[, time, 1, 2]
-    P[, time, 2, 1] <- inv_logit(beta_0s_hat[,idx] + beta_1s_hat[,idx] * cos(2*pi*time/period) + beta_2s_hat[,idx] * sin(2*pi*time/period)+ alpha_s_hat[,idx] * time + lats[ids]*beta_Ls_hat[,idx] + elev[ids]*beta_Es_hat[,idx])
+    P[, time, 2, 1] <- inv_logit(beta_0s_hat[,idx] + beta_1s_hat[,idx] * cos(2*pi*time/period) + beta_2s_hat[,idx] * sin(2*pi*time/period)+ alpha_s_hat[,idx] * time)
     P[, time, 2, 2] <- 1 - P[, time, 2, 1]
   }
   for (s in 1:SS) {
