@@ -5,8 +5,7 @@ library(sp)
 library(ggplot2)
 library(rnaturalearth)
 library(RColorBrewer)
-idx <- which(readRDS("github_DF")$Group=="4")
-snow_dat <- read.csv(here::here("snow_dat.csv"))[idx,-1]
+snow_dat <- readRDS(here::here("snow_cleaned_full.Rda"))
 snow_matrix <- as.matrix(snow_dat[,-(1:2)])
 snow_long <- snow_dat$LON
 snow_lat <- snow_dat$LAT
@@ -33,7 +32,7 @@ equator_sf <- st_as_sf(equator_points, coords = c("lon", "lat"), crs = 4326)
 equator_aeqd <- st_transform(equator_sf, crs = aeqd_proj)
 
 
-idx = 1000
+idx = which(colnames(snow_matrix)=="1990-03-05")
 
 # Plot for a single time
 ggplot() +
@@ -45,7 +44,7 @@ ggplot() +
   geom_sf(data = world_aeqd, fill = "NA", color = "black") + # World map
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1)+
   theme_minimal() +
-  labs(title = paste("Snow Existence Map from the North Pole","-",substr(names(sf_data_aeqd)[idx],start = 2, stop = 50) ),
+  labs(title = "Snow Coverage For Week 1990-03-05",
        color = "Snow Existence") +
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 
