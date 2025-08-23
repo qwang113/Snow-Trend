@@ -18,7 +18,7 @@ elev <- scale(c(read.csv(here::here("curr_elev.csv"))[,4]
         ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4]))
 lats <- scale(coords[,2])
 
-sample_idx <- seq(from = 1204, to = 2000, by = 4)
+sample_idx <- seq(from = 1005, to = 2000, by = 5)
 
 setwd("D:/77/Research/temp/snow/")
 
