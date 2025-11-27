@@ -57,22 +57,27 @@ period = 52
 location_time_0 <- which(y[,-ncol(y)]==1, arr.ind =  TRUE)
 row_idx <- location_time_0[,1]
 next_y <- abs(y[cbind(location_time_0[,1], location_time_0[,2]+1)] - 1)
-design_mat <- Matrix(0, nrow = length(next_y), ncol = 8*S, sparse = TRUE)
+design_mat <- Matrix(0, nrow = length(next_y), ncol = 12*S, sparse = TRUE)
 location_idx <- sparse.model.matrix(~ factor(row) - 1, data = data.frame(location_time_0))
 
-# pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
-covariates <- Matrix(
-  cbind(1,1,
-        cos(2*pi*location_time_0[,2]/period),
-        cos(2*pi*location_time_0[,2]/period),
-        sin(2*pi*location_time_0[,2]/period), 
-        sin(2*pi*location_time_0[,2]/period), 
-        location_time_0[,2], location_time_0[,2]), sparse = TRUE )
+lats_design <- lats[row_idx]
+elev_design <- elev[row_idx]
 
-# # Loop through chunks of rows
-# chunk_size <- 10
+# pb <- txtProgressBar(min = 0, max = nrow(design_mat), style = 3)
+# covariates <- Matrix(
+#   cbind(1,1,
+#         cos(2*pi*location_time_0[,2]/period),
+#         cos(2*pi*location_time_0[,2]/period),
+#         sin(2*pi*location_time_0[,2]/period), 
+#         sin(2*pi*location_time_0[,2]/period), 
+#         location_time_0[,2], location_time_0[,2],
+#         elev_design, elev_design,
+#         lats_design,lats_design), sparse = TRUE )
+
+# Loop through chunks of rows
+# chunk_size <- 1000
 # curr_row <- 1
-# for (start_row in seq(curr_row , nrow(location_idx), by = chunk_size)) {
+# for (start_row in seq(curr_row , 5000, by = chunk_size)) {
 #   print(start_row)
 #   # Define the end row for the current chunk
 #   end_row <- min(start_row + chunk_size - 1, nrow(location_idx))
@@ -93,30 +98,16 @@ covariates <- Matrix(
 #   # Convert result matrix to a sparse Matrix format and store in design_mat
 #   design_mat[start_row:end_row, ] <- Matrix(result_matrix, sparse = TRUE)
 # }
-
-# saveRDS(design_mat,"D:/77/Research/temp/snow/design10.Rda")
+setwd("D:/77/Research/temp/snow/")
 design_mat <- readRDS("D:/77/Research/temp/snow/design10.Rda")
+design_mat <- cbind(design_mat, elev_design, lats_design)
 
-lats_design <- lats[row_idx]
-elev_design <- elev[row_idx]
 
-other_covariates <- Matrix(
-  cbind(lats_design, 
-        lats_design*cos(2*pi*location_time_0[,2]/period),
-        lats_design*sin(2*pi*location_time_0[,2]/period),
-        lats_design*location_time_0[,2],
-        elev_design,
-        elev_design*cos(2*pi*location_time_0[,2]/period),
-        elev_design*sin(2*pi*location_time_0[,2]/period),
-        elev_design*location_time_0[,2]
-        ), sparse = TRUE )
-
-design_mat <- cbind(design_mat, other_covariates)
 tot_samples <- 2000
 
-all_theta <- matrix(NA, nrow = 8*S + 8, ncol = tot_samples)
+all_theta <- matrix(NA, nrow = 8*S+2, ncol = tot_samples)
 all_tau <- matrix(NA, nrow = 8, ncol = tot_samples)
-curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S + 8)
+curr_theta_vec <- matrix(0, nrow = 1, ncol = 8*S+2)
 curr_tau_vec <- rep(1,8)
 a_tau <- 0.001
 b_tau <- 0.001
@@ -143,7 +134,7 @@ while(save_idx < tot_samples) {
     1/curr_tau_vec[6]*diag(1,S),
     1/curr_tau_vec[7]*prec,
     1/curr_tau_vec[8]*diag(1,S),
-    1/10000*diag(1,8)
+    1/100*diag(1,2)
   )                  
   xtxomg <- t(design_mat)%*% Diagonal(length(curr_omega), curr_omega)%*%(design_mat)
   pos_prec <- xtxomg + curr_prec
@@ -169,11 +160,14 @@ while(save_idx < tot_samples) {
   
   if((curr_idx > burn) & (curr_idx %% thin == 0) ){
     save_idx <- save_idx + 1
+    
     all_theta[,save_idx] <- as.vector(curr_theta_vec)
     all_tau[,save_idx] <-  as.vector(curr_tau_vec)
+    print(curr_tau_vec)
   }
 }
+
 setwd("D:/77/Research/temp/snow/")
-saveRDS(all_theta[,1:1000], "theta10_bym+withtime.Rda")
-saveRDS(all_tau[,1:1000], "tau10_bym+withtime.Rda")
+saveRDS(all_theta, "theta10_bym++.Rda")
+saveRDS(all_tau, "tau10_bym++.Rda")
 

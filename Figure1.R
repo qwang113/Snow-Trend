@@ -5,7 +5,8 @@ library(sp)
 library(ggplot2)
 library(rnaturalearth)
 library(RColorBrewer)
-snow_dat <- readRDS(here::here("snow_cleaned_full.Rda"))
+setwd("D:/77/Research/temp/snow/")
+snow_dat <- readRDS("snow_all_groups.Rda")
 snow_matrix <- as.matrix(snow_dat[,-(1:2)])
 snow_long <- snow_dat$LON
 snow_lat <- snow_dat$LAT
@@ -46,16 +47,16 @@ library(ggplot2)
 
 ggplot() +
   geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-  geom_sf(data = sf_data_aeqd, aes(color = plot_snow), size = 1.5, shape = 18) +
+  geom_sf(data = sf_data_aeqd, aes(color = plot_snow), size = 1.5, shape = 18,show.legend = FALSE) +
   scale_color_manual(
-    values = c("0 or NA" = "lightgray", "Snow" = "skyblue"),
+    values = c("0 or NA" = "lightgray", "Snow" = "#1f78b4"),
     breaks = c("0 or NA", "Snow"),
     name = "Snow Existence"
   ) +
   geom_sf(data = world_aeqd, fill = NA, color = "black") +
   geom_sf(data = equator_aeqd, color = "red", linetype = "dashed", size = 0.1) +
   theme_minimal() +
-  labs(title = "Snow Coverage On Mar.5, 1990") +
+  labs(title = "Snow Presence On Mar.5, 1990") +
   theme(
     legend.position = "bottom",
     plot.title = element_text(hjust = 0.5)

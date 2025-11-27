@@ -14,6 +14,11 @@ y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 coords_nnbs <- readRDS(here::here("snow_cleaned.Rda"))[no_nbs,1:2]
 coords <- rbind(coords, coords_nnbs)
+
+elev <- scale(c(read.csv(here::here("curr_elev.csv"))[,4]
+                ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4]))
+lats <- scale(coords[,2])
+
 # First year
 setwd("D:/77/Research/temp/snow")
 weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
@@ -31,14 +36,21 @@ weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
 dpd_snow_diff <- (apply(weekly_final_without_lat_alt[,,,2],c(1,2),sum) - apply(weekly_ini_without_lat_alt[,,,2], c(1,2),sum))/51
 dpd_diff_mean_without_lat_alt <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_without_lat_alt <- apply(dpd_snow_diff,2,sd)
+dpd_lower_without_lat_alt <- apply(dpd_snow_diff, 2, quantile, 0.025)
+dpd_upper_without_lat_alt <- apply(dpd_snow_diff, 2, quantile, 0.975)
 
 dpd_snow_diff <- (apply(weekly_final_lat_alt[,,,2],c(1,2),sum) - apply(weekly_ini_lat_alt[,,,2], c(1,2),sum))/51
 dpd_diff_mean_lat_alt <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_lat_alt <- apply(dpd_snow_diff,2,sd)
+dpd_lower_lat_alt <- apply(dpd_snow_diff, 2, quantile, 0.025)
+dpd_upper_lat_alt <- apply(dpd_snow_diff, 2, quantile, 0.975)
 
 dpd_snow_diff <- (apply(weekly_final_INDEP[,,,2],c(1,2),sum) - apply(weekly_ini_INDEP[,,,2], c(1,2),sum))/51
 dpd_diff_mean_INDEP <- apply(dpd_snow_diff,2,mean)
 dpd_diff_sd_INDEP <- apply(dpd_snow_diff,2,sd)
+dpd_lower_INDEP <- apply(dpd_snow_diff, 2, quantile, 0.025)
+dpd_upper_INDEP <- apply(dpd_snow_diff, 2, quantile, 0.975)
+
 
 # ----------------------------------------------------------------------------Plots
 # Convert the data frame to an sf object
@@ -334,30 +346,38 @@ c(table(dpd_diff_mean_INDEP < 0),
   round(mean(dpd_diff_mean_INDEP),4),
   round(median(dpd_diff_mean_INDEP),4), 
   round(mean(dpd_diff_sd_INDEP),4), 
-  round(mean(dpd_diff_mean_INDEP/dpd_diff_sd_INDEP),4),
-  length(which(dpd_diff_mean_INDEP/dpd_diff_sd_INDEP>2)),
-  length(which(dpd_diff_mean_INDEP/dpd_diff_sd_INDEP < -2))
+  length(which(dpd_upper_INDEP <0)),
+  length(which(dpd_lower_INDEP >0))
 ),
 
 c(table(dpd_diff_mean_without_lat_alt < 0),
   round(mean(dpd_diff_mean_without_lat_alt),4),
   round(median(dpd_diff_mean_without_lat_alt),4),
   round(mean(dpd_diff_sd_without_lat_alt),4),
-  round(mean(dpd_diff_mean_without_lat_alt/dpd_diff_sd_without_lat_alt),4),
-  length(which(dpd_diff_mean_without_lat_alt/dpd_diff_sd_without_lat_alt > 2)),
-  length(which(dpd_diff_mean_without_lat_alt/dpd_diff_sd_without_lat_alt < -2))
+  length(which(dpd_upper_without_lat_alt <0)),
+  length(which(dpd_lower_without_lat_alt >0))
 ),
 
 c(table(dpd_diff_mean_lat_alt < 0),
   round(mean(dpd_diff_mean_lat_alt),4),
   round(median(dpd_diff_mean_lat_alt),4),
   round(mean(dpd_diff_sd_lat_alt),4),
-  round(mean(dpd_diff_mean_lat_alt/dpd_diff_sd_lat_alt),4),
-  length(which(dpd_diff_mean_lat_alt/dpd_diff_sd_lat_alt>2)),
-  length(which(dpd_diff_mean_lat_alt/dpd_diff_sd_lat_alt < -2))
+  length(which(dpd_upper_lat_alt<0)),
+  length(which(dpd_lower_lat_alt>0))
   )
 ))
 
-colnames(tb) <- c("Increase","Decrease","Mean","Median","SD","Z-Score Mean","z>2","z<-2")
+tb = tb[,c(1,7,2,6,3,4,5)]
+colnames(tb) <- c("Increase","Increase*","Decrease","Decrease*","Mean","Median","SD")
 rownames(tb) <- c("IND","BYM","BYM+")
 knitr::kable(tb, align = 'c', format = "latex")
+
+
+
+# Trend Elevation + Latitude Regression
+
+M1 <- lm(dpd_diff_mean_without_lat_alt ~ lats + elev)
+sm1 <- summary(M1)
+knitr::kable(sm1$coefficients, format = "latex", digits = 5)
+
+
