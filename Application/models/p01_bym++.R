@@ -100,7 +100,6 @@ setwd("D:/77/Research/temp/snow/")
 design_mat <- readRDS("D:/77/Research/temp/snow/design01.Rda")
 design_mat <- cbind(design_mat, elev_design, lats_design)
 
-
 # DT <- design_mat[,(1618*2+1):(1618*3)]
 # which(DT[permutated_idx] != cos(2*pi*location_time_0[,2]/period)) 
  
