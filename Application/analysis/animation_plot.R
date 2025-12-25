@@ -15,18 +15,21 @@ all_y_nnbs <- readRDS("snow_cleaned_full.Rda")[no_nbs,]
 y <- rbind(all_y, all_y_nnbs)[,-c(1,2)]
 coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
+
 # First year
 setwd("D:/77/Research/temp/snow")
-weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
-weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
+load("predict_ind.Rda")
 
+weekly_ini_INDEP <- weekly_ini
+weekly_final_INDEP <- weekly_final
+
+load("predict_bym.Rda")
+weekly_ini_without_lat_alt <- weekly_ini
+weekly_final_without_lat_alt <- weekly_final
+
+load("predict_bympp.Rda")
 weekly_ini_lat_alt <- readRDS("ini_year_bym+notime.Rda")
 weekly_final_lat_alt <- readRDS("fin_year_bym+notime.Rda")
-
-
-weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
-weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
-
 
 
 p_snow_diff <- weekly_final_without_lat_alt[,,,2] - weekly_ini_without_lat_alt[,,,2]

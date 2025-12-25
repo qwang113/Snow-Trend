@@ -19,16 +19,19 @@ elev <- scale(c(read.csv(here::here("curr_elev.csv"))[,4]
                 ,read.csv(here::here("nnbs_elev.csv"), sep = "\t", row.names = NULL)[,4]))
 lats <- scale(coords[,2])
 
-# First year
 setwd("D:/77/Research/temp/snow")
-weekly_ini_without_lat_alt <- readRDS("ini_year_bym.Rda")
-weekly_final_without_lat_alt <- readRDS("fin_year_bym.Rda")
+load("predict_ind.Rda")
 
-weekly_ini_lat_alt <- readRDS("ini_year_bym+notime.Rda")
-weekly_final_lat_alt <- readRDS("fin_year_bym+notime.Rda")
+weekly_ini_INDEP <- weekly_ini
+weekly_final_INDEP <- weekly_final
 
-weekly_ini_INDEP <- readRDS("ini_year_ind.Rda")
-weekly_final_INDEP <- readRDS("fin_year_ind.Rda")
+load("predict_bym.Rda")
+weekly_ini_without_lat_alt <- weekly_ini
+weekly_final_without_lat_alt <- weekly_final
+
+load("predict_bympp.Rda")
+weekly_ini_lat_alt <- weekly_ini
+weekly_final_lat_alt <- weekly_final
 
 # weekly_ini_lat_alt_prior_100 <- readRDS("weekly_ini_with_lat+out_prior_100.Rda")
 # weekly_final_lat_alt_prior_100 <- readRDS("weekly_final_with_lat+out_prior_100.Rda")
