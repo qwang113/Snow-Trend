@@ -170,3 +170,161 @@ png_files <- png_files[order(as.numeric(gsub("\\D","",png_files)))]
 gif <- image_read(png_files)
 gif <- image_animate(gif, fps=5)
 image_write(gif, "trend_animation_bym_weekly_cov.gif")
+
+
+
+
+i = 17
+trend_sf$val <- trend_sf[[i]]
+p1 <- ggplot() +
+  geom_sf(data=world_aeqd, fill="lightgray", color=NA) +
+  geom_sf(data=trend_sf,
+          aes(color=val),
+          size=3, shape=18) +
+  geom_sf(data=world_aeqd, fill=NA, color="black") +
+  geom_sf(data=equator_aeqd,
+          color="red", linetype="dashed", size=0.1) +
+  scale_color_gradient2(
+    low="red",
+    mid="white",
+    high="blue",
+    midpoint=0,
+    limits=rg_mean,
+    guide=guide_colorbar(barwidth=25, barheight=0.5)
+  ) +
+  theme_minimal() +
+  labs(
+    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    color=""
+  ) +
+  annotate("text",
+           x = -7000000,
+           y = -1000000,
+           label = month_abbr[i],
+           size = 14,
+           fontface = "bold") +
+  theme(
+    legend.position="bottom",
+    plot.title=element_text(hjust=0.5)
+  )
+
+
+
+i = 21
+trend_sf$val <- trend_sf[[i]]
+p2 <- ggplot() +
+  geom_sf(data=world_aeqd, fill="lightgray", color=NA) +
+  geom_sf(data=trend_sf,
+          aes(color=val),
+          size=3, shape=18) +
+  geom_sf(data=world_aeqd, fill=NA, color="black") +
+  geom_sf(data=equator_aeqd,
+          color="red", linetype="dashed", size=0.1) +
+  scale_color_gradient2(
+    low="red",
+    mid="white",
+    high="blue",
+    midpoint=0,
+    limits=rg_mean,
+    guide=guide_colorbar(barwidth=25, barheight=0.5)
+  ) +
+  theme_minimal() +
+  labs(
+    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    color=""
+  ) +
+  annotate("text",
+           x = -7000000,
+           y = -1000000,
+           label = month_abbr[i],
+           size = 14,
+           fontface = "bold") +
+  theme(
+    legend.position="bottom",
+    plot.title=element_text(hjust=0.5)
+  )
+
+cowplot::plot_grid(p1,p2)
+
+
+
+
+
+
+
+i = 38
+trend_sf$val <- trend_sf[[i]]
+p1 <- ggplot() +
+  geom_sf(data=world_aeqd, fill="lightgray", color=NA) +
+  geom_sf(data=trend_sf,
+          aes(color=val),
+          size=3, shape=18) +
+  geom_sf(data=world_aeqd, fill=NA, color="black") +
+  geom_sf(data=equator_aeqd,
+          color="red", linetype="dashed", size=0.1) +
+  scale_color_gradient2(
+    low="red",
+    mid="white",
+    high="blue",
+    midpoint=0,
+    limits=rg_mean,
+    guide=guide_colorbar(barwidth=25, barheight=0.5)
+  ) +
+  theme_minimal() +
+  labs(
+    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    color=""
+  ) +
+  annotate("text",
+           x = -7000000,
+           y = -1000000,
+           label = month_abbr[i],
+           size = 14,
+           fontface = "bold") +
+  theme(
+    legend.position="bottom",
+    plot.title=element_text(hjust=0.5)
+  )
+
+
+
+i = 44
+trend_sf$val <- trend_sf[[i]]
+p2 <- ggplot() +
+  geom_sf(data=world_aeqd, fill="lightgray", color=NA) +
+  geom_sf(data=trend_sf,
+          aes(color=val),
+          size=3, shape=18) +
+  geom_sf(data=world_aeqd, fill=NA, color="black") +
+  geom_sf(data=equator_aeqd,
+          color="red", linetype="dashed", size=0.1) +
+  scale_color_gradient2(
+    low="red",
+    mid="white",
+    high="blue",
+    midpoint=0,
+    limits=rg_mean,
+    guide=guide_colorbar(barwidth=25, barheight=0.5)
+  ) +
+  theme_minimal() +
+  labs(
+    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    color=""
+  ) +
+  annotate("text",
+           x = -7000000,
+           y = -1000000,
+           label = month_abbr[i],
+           size = 14,
+           fontface = "bold") +
+  theme(
+    legend.position="bottom",
+    plot.title=element_text(hjust=0.5)
+  )
+
+cowplot::plot_grid(p1,p2)
+
+
+
+
+

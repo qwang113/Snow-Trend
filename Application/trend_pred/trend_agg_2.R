@@ -212,16 +212,6 @@ cowplot::plot_grid(p4, p5, p6, nrow = 1)
 
 
 
-# ------------------------------------------------------------
-# 7️⃣ Table
-# ------------------------------------------------------------
-# ------------------------------------------------------------
-# Table in journal format
-#   Increase  = total positive
-#   (* )      = significantly positive (lower > 0)
-#   Decrease  = total negative
-#   (* )      = significantly negative (upper < 0)
-# ------------------------------------------------------------
 
 make_table_row <- function(trend) {
   
