@@ -10,7 +10,7 @@ library(reticulate)
 # ============================================================
 # 0️⃣  Use correct Python (CPD env with numpy)
 # ============================================================
-use_python("e:/anaconda3/envs/CPD/python.exe", required = TRUE)
+use_condaenv("CPD", required = TRUE)
 np <- import("numpy")
 
 # ============================================================
