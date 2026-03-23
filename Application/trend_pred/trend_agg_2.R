@@ -248,8 +248,7 @@ kable(
   col.names = colnames(tb)
 )
 
-colnames(tb) <- c("Decrease","Increase","Mean","Median","SD",
-                  "Signif Decrease","Signif Increase")
+colnames(tb) <- c("Decrease","Increase","Mean","Median","SD")
 rownames(tb) <- c("IND","BYM","BYM+")
 
 knitr::kable(tb, format="latex", digits=4)
