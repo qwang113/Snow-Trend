@@ -76,39 +76,33 @@ py_config()
 
 np <- import("numpy")
 setwd("D:/77/Research/temp/snow")
-ind_data  <- np$load("trend_ind.npz", allow_pickle=TRUE)
-bym_data  <- np$load("trend_bym_weekly.npz", allow_pickle=TRUE)
-bymp_data <- np$load("trend_weekly_bym+cov.npz", allow_pickle=TRUE)
 
-weekly_ini_INDEP   <- ind_data$f[["weekly_ini"]]
-weekly_final_INDEP <- ind_data$f[["weekly_final"]]
+np <- import("numpy")
 
-weekly_ini_BM   <- bym_data$f[["weekly_ini"]]
-weekly_final_BM <- bym_data$f[["weekly_final"]]
+ind  <- np$load("trend_ind_summary.npz")
+bym  <- np$load("trend_bym_summary.npz")
+bymp <- np$load("trend_bymp_summary.npz")
 
-weekly_ini_BMP   <- bymp_data$f[["weekly_ini"]]
-weekly_final_BMP <- bymp_data$f[["weekly_final"]]
+trend_INDEP <- list(
+  mean  = ind$f$mean,
+  sd    = ind$f$sd,
+  lower = ind$f$lower,
+  upper = ind$f$upper
+)
 
-# ------------------------------------------------------------
-# 5️⃣ Trend computation
-# ------------------------------------------------------------
-compute_trend <- function(ini, final) {
-  
-  dpd_snow_diff <-
-    (apply(final[,,,2], c(1,2), sum) -
-       apply(ini[,,,2], c(1,2), sum)) / 51
-  
-  list(
-    mean  = apply(dpd_snow_diff, 2, mean),
-    sd    = apply(dpd_snow_diff, 2, sd),
-    lower = apply(dpd_snow_diff, 2, quantile, 0.025),
-    upper = apply(dpd_snow_diff, 2, quantile, 0.975)
-  )
-}
+trend_BM <- list(
+  mean  = bym$f$mean,
+  sd    = bym$f$sd,
+  lower = bym$f$lower,
+  upper = bym$f$upper
+)
 
-trend_INDEP <- compute_trend(weekly_ini_INDEP, weekly_final_INDEP)
-trend_BM    <- compute_trend(weekly_ini_BM, weekly_final_BM)
-trend_BMP   <- compute_trend(weekly_ini_BMP, weekly_final_BMP)
+trend_BMP <- list(
+  mean  = bymp$f$mean,
+  sd    = bymp$f$sd,
+  lower = bymp$f$lower,
+  upper = bymp$f$upper
+)
 
 # ------------------------------------------------------------
 # 6️⃣ Map prep
@@ -156,7 +150,7 @@ plot_mean <- function(sf_obj, title) {
       )
     ) +
     theme_minimal() +
-    labs(title = title, color = "") +
+    labs(title = title, color = "Mean") +
     theme(
       legend.position = "bottom",
       plot.title = element_text(hjust = 0.5)
@@ -210,7 +204,7 @@ p6 <- plot_sd(sf_BMP, "Aggregated Trend log(SD) - Weekly BYM+")
 
 cowplot::plot_grid(p4, p5, p6, nrow = 1)
 
-
+cowplot::plot_grid(p3, p6, nrow = 1)
 
 
 make_table_row <- function(trend) {
