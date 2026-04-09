@@ -25,7 +25,7 @@ burn = 10000
 thin = 2
 tot_save = 5000
 total_iters = burn + thin * tot_save
-n_chains = 10
+n_chains = 5
 period = 52
 
 # ================================================================
@@ -223,6 +223,23 @@ def run_chain(chain_id, data, event):
 
     save_idx = 0
 
+    X_tilde_eta = X_eta_base.copy()
+    X_tilde_eta.data[sp_mask] *= curr_tau[tau_indices]
+
+    psi = X_tilde_eta @ curr_eta
+    omega = random_polyagamma(1, psi)
+
+    XtOmega = X_tilde_eta.T.multiply(omega)
+    post_prec_eta = (XtOmega @ X_tilde_eta + Q_eta).tocsc()
+
+    factor_eta = cholesky(post_prec_eta, mode="simplicial")
+
+    X_tilde_tau = X_tau_base.copy()
+    XtOmega = X_tilde_tau.T.multiply(omega)
+    post_prec_tau = (XtOmega @ X_tilde_tau + tau_prior_prec).tocsc()
+
+    factor_tau = cholesky(post_prec_tau, mode="simplicial")
+
     for it in tqdm(range(total_iters),
                    desc=f"{event}-Chain {chain_id}",
                    position=chain_id):
@@ -236,13 +253,13 @@ def run_chain(chain_id, data, event):
         XtOmega = X_tilde_eta.T.multiply(omega)
         post_prec_eta = (XtOmega @ X_tilde_eta + Q_eta).tocsc()
 
-        factor = cholesky(post_prec_eta, mode="simplicial")
-        mu = factor.solve_A(X_tilde_eta.T @ kappa)
+        factor_eta.cholesky_inplace(post_prec_eta)
+        mu = factor_eta.solve_A(X_tilde_eta.T @ kappa)
 
         z = np.random.randn(eta_dim)
-        z = z / np.sqrt(factor.D())
-        z = factor.solve_Lt(z)
-        z = factor.apply_Pt(z)
+        z = z / np.sqrt(factor_eta.D())
+        z = factor_eta.solve_Lt(z)
+        z = factor_eta.apply_Pt(z)
 
         curr_eta = mu + z
 
@@ -264,13 +281,13 @@ def run_chain(chain_id, data, event):
         XtOmega = X_tilde_tau.T.multiply(omega)
         post_prec_tau = (XtOmega @ X_tilde_tau + tau_prior_prec).tocsc()
 
-        factor = cholesky(post_prec_tau, mode="simplicial")
-        mu = factor.solve_A(X_tilde_tau.T @ residual)
+        factor_tau.cholesky_inplace(post_prec_tau)
+        mu = factor_tau.solve_A(X_tilde_tau.T @ residual)
 
         z = np.random.randn(tau_dim)
-        z = z / np.sqrt(factor.D())
-        z = factor.solve_Lt(z)
-        z = factor.apply_Pt(z)
+        z = z / np.sqrt(factor_tau.D())
+        z = factor_tau.solve_Lt(z)
+        z = factor_tau.apply_Pt(z)
 
         curr_tau = mu + z
 
