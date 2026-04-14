@@ -11,7 +11,7 @@ library(reticulate)
 # 0️⃣  Use correct Python (CPD env with numpy)
 # ============================================================
 use_condaenv("CPD", required = TRUE)
-np <- import("numpy")
+np <- import("numpy", convert = TRUE)
 
 # ============================================================
 # CONFIG
@@ -19,49 +19,21 @@ np <- import("numpy")
 DIST_TH <- 0.22
 aeqd_proj <- "+proj=aeqd +lat_0=90 +lon_0=-100"
 
-no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989,
-            1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-
 # ============================================================
-# 1️⃣ Load snow + reproduce Python filtering
-#     (two largest connected components)
+# 1️⃣ Load snow (FULL DATA)
 # ============================================================
 snow_full <- readRDS("snow_cleaned_full.Rda")
-snow_full <- snow_full[-no_nbs,]
 
-coords_full <- as.matrix(snow_full[,1:2])
-y_full <- as.matrix(snow_full[,-c(1,2)])
-
-coords_sf <- st_as_sf(
-  data.frame(LON=coords_full[,1], LAT=coords_full[,2]),
-  coords=c("LON","LAT"),
-  crs=4326
-)
-
-coords_aeqd <- st_transform(coords_sf, aeqd_proj)
-xy <- st_coordinates(coords_aeqd) / 1e6
-
-Dmat <- as.matrix(dist(xy))
-W <- (Dmat <= DIST_TH) * 1
-diag(W) <- 0
-
-g <- graph_from_adjacency_matrix(W, mode="undirected")
-comp <- components(g)
-
-sizes <- comp$csize
-order_idx <- order(sizes, decreasing=TRUE)
-keep_idx <- sort(which(comp$membership %in% order_idx[1:2]))
-
-coords <- coords_full[keep_idx,]
-y <- y_full[keep_idx,]
+coords <- as.matrix(snow_full[,1:2])
+y <- as.matrix(snow_full[,-c(1,2)])
 
 S <- nrow(coords)
-cat("Final S =", S, "\n")
+cat("FULL S =", S, "\n")
 
 # ============================================================
 # 2️⃣ Load BYM weekly + cov (strict version, NPZ)
 # ============================================================
-bymp_data <- np$load("trend_weekly_bym+cov.npz", allow_pickle=TRUE)
+bymp_data <- np$load("trend_ind_full.npz", allow_pickle=TRUE)
 
 weekly_ini_BMP   <- bymp_data$f[["weekly_ini"]]
 weekly_final_BMP <- bymp_data$f[["weekly_final"]]
@@ -69,10 +41,13 @@ weekly_final_BMP <- bymp_data$f[["weekly_final"]]
 # ============================================================
 # 3️⃣ Weekly difference (final - initial)
 # ============================================================
-d <- weekly_final_BMP[,,,2] - weekly_ini_BMP[,,,2]
+d_py <- weekly_final_BMP[,,,1] - weekly_ini_BMP[,,,1]
 
-diff_mean <- apply(d, c(2,3), mean)
-diff_sd   <- apply(d, c(2,3), sd)
+diff_mean <- py_to_r(np$mean(d_py, axis = 0L)$tolist())
+diff_sd   <- py_to_r(np$std(d_py, axis = 0L)$tolist())
+
+diff_mean <- do.call(rbind, diff_mean)
+diff_sd   <- do.call(rbind, diff_sd)
 
 # ============================================================
 # 4️⃣ Create SF object (aligned)
@@ -142,7 +117,7 @@ for(i in 1:52){
     ) +
     theme_minimal() +
     labs(
-      title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+      title=paste("Trend Mean (ind) - Week", wk_names[i]),
       color=""
     ) +
     annotate("text",
@@ -169,7 +144,32 @@ png_files <- png_files[order(as.numeric(gsub("\\D","",png_files)))]
 
 gif <- image_read(png_files)
 gif <- image_animate(gif, fps=5)
-image_write(gif, "trend_animation_bym_weekly_cov.gif")
+image_write(gif, "animation_ind.gif")
+
+pos_count <- colSums(diff_mean > 0)[-1]
+df_plot <- data.frame(
+  week = 2:52,
+  n_pos = pos_count
+)
+
+ggplot(df_plot, aes(x = week, y = n_pos)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  
+  # bounds
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = S, linetype = "dashed", color = "blue") +
+  
+  scale_x_continuous(breaks = seq(1, 52, by = 4)) +
+  labs(
+    x = "Week",
+    y = "Number of cells with trend > 0",
+    title = "Weekly count of cells with positive trend"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
 
 
 

@@ -1,7 +1,6 @@
 rm(list = ls())
 
 library(sf)
-library(igraph)
 library(ggplot2)
 library(rnaturalearth)
 library(cowplot)
@@ -11,113 +10,103 @@ library(knitr)
 # ------------------------------------------------------------
 # CONFIG
 # ------------------------------------------------------------
-DIST_TH <- 0.22
 period <- 52
 
 # ------------------------------------------------------------
-# 1️⃣ Load snow + remove isolated
+# 1️⃣ Load FULL snow
 # ------------------------------------------------------------
-no_nbs <- c(57, 170, 236, 269, 343, 685, 946, 947, 989,
-            1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203)
-
 snow_full <- readRDS("snow_cleaned.Rda")
-snow_full <- snow_full[-no_nbs,]
 
-coords_full <- as.matrix(snow_full[,1:2])
-y_full <- as.matrix(snow_full[,-c(1,2)])
-
-# ------------------------------------------------------------
-# 2️⃣ Keep two largest connected components
-# ------------------------------------------------------------
-coords_sf <- st_as_sf(
-  data.frame(LON=coords_full[,1], LAT=coords_full[,2]),
-  coords=c("LON","LAT"),
-  crs=4326
-)
-
-coords_aeqd <- st_transform(coords_sf,
-                            "+proj=aeqd +lat_0=90 +lon_0=-100")
-
-xy <- st_coordinates(coords_aeqd) / 1e6
-
-Dmat <- as.matrix(dist(xy))
-W <- (Dmat <= DIST_TH) * 1
-diag(W) <- 0
-
-g <- graph_from_adjacency_matrix(W, mode="undirected")
-comp <- components(g)
-
-sizes <- comp$csize
-order_idx <- order(sizes, decreasing=TRUE)
-keep_idx <- sort(which(comp$membership %in% order_idx[1:2]))
-
-coords <- coords_full[keep_idx,]
-y <- y_full[keep_idx,]
+coords <- as.matrix(snow_full[, 1:2])
+y <- as.matrix(snow_full[, -c(1, 2)])
 
 S <- nrow(coords)
-cat("Final S =", S, "\n")
+cat("FULL S =", S, "\n")
 
 # ------------------------------------------------------------
-# 3️⃣ Covariates (aligned)
+# 2️⃣ Covariates (FULL, aligned with full-data fitting)
 # ------------------------------------------------------------
-elev_all <- read.csv("curr_elev.csv")[,4]
-elev <- scale(elev_all[-no_nbs][keep_idx])
+no_nbs <- c(
+  57, 170, 236, 269, 343, 685, 946, 947, 989,
+  1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203
+)
 
-lats <- scale(coords[,2])
+# latitude
+lats <- as.numeric(scale(coords[, 2]))
+
+# elevation: curr_elev + nnbs_elev
+elev_raw <- read.csv("curr_elev.csv")[, 4]
+nnbs_elev <- read.delim("nnbs_elev.csv", sep = "\t", row.names = NULL)[, 4]
+
+mask <- rep(TRUE, S)
+mask[no_nbs] <- FALSE
+
+elev_all <- numeric(S)
+elev_all[mask] <- elev_raw
+elev_all[no_nbs] <- nnbs_elev
+
+elev <- as.numeric(scale(elev_all))
 
 # ------------------------------------------------------------
-# 4️⃣ Load NPZ (no Rda)
+# 3️⃣ Load NPZ summaries (FULL DATA)
 # ------------------------------------------------------------
-library(reticulate)
-
-use_python("e:/anaconda3/envs/CPD/python.exe", required = TRUE)
-
+use_condaenv("CPD", required = TRUE)
 py_config()
 
-np <- import("numpy")
 setwd("D:/77/Research/temp/snow")
+np <- import("numpy", convert = FALSE)
 
-np <- import("numpy")
+ind  <- np$load("trend_ind_summary.npz", allow_pickle = TRUE)
+bym  <- np$load("trend_bym_summary.npz", allow_pickle = TRUE)
+bymp <- np$load("trend_bymp_summary.npz", allow_pickle = TRUE)
 
-ind  <- np$load("trend_ind_summary.npz")
-bym  <- np$load("trend_bym_summary.npz")
-bymp <- np$load("trend_bymp_summary.npz")
+to_r_vec <- function(x) {
+  as.numeric(py_to_r(x$tolist()))
+}
 
 trend_INDEP <- list(
-  mean  = ind$f$mean,
-  sd    = ind$f$sd,
-  lower = ind$f$lower,
-  upper = ind$f$upper
+  mean  = to_r_vec(ind$f[["mean"]]),
+  sd    = to_r_vec(ind$f[["sd"]]),
+  lower = to_r_vec(ind$f[["lower"]]),
+  upper = to_r_vec(ind$f[["upper"]])
 )
 
 trend_BM <- list(
-  mean  = bym$f$mean,
-  sd    = bym$f$sd,
-  lower = bym$f$lower,
-  upper = bym$f$upper
+  mean  = to_r_vec(bym$f[["mean"]]),
+  sd    = to_r_vec(bym$f[["sd"]]),
+  lower = to_r_vec(bym$f[["lower"]]),
+  upper = to_r_vec(bym$f[["upper"]])
 )
 
 trend_BMP <- list(
-  mean  = bymp$f$mean,
-  sd    = bymp$f$sd,
-  lower = bymp$f$lower,
-  upper = bymp$f$upper
+  mean  = to_r_vec(bymp$f[["mean"]]),
+  sd    = to_r_vec(bymp$f[["sd"]]),
+  lower = to_r_vec(bymp$f[["lower"]]),
+  upper = to_r_vec(bymp$f[["upper"]])
 )
 
+stopifnot(length(trend_INDEP$mean) == S)
+stopifnot(length(trend_BM$mean) == S)
+stopifnot(length(trend_BMP$mean) == S)
+
 # ------------------------------------------------------------
-# 6️⃣ Map prep
+# 4️⃣ Map prep
 # ------------------------------------------------------------
 aeqd_proj <- "+proj=aeqd +lat_0=90 +lon_0=-100"
 
 make_sf <- function(mean, sd) {
   st_transform(
     st_as_sf(
-      data.frame(LON=coords[,1], LAT=coords[,2],
-                 mean=mean, sd=sd),
-      coords=c("LON","LAT"),
-      crs=4326
+      data.frame(
+        LON = coords[, 1],
+        LAT = coords[, 2],
+        mean = mean,
+        sd = sd
+      ),
+      coords = c("LON", "LAT"),
+      crs = 4326
     ),
-    crs=aeqd_proj
+    crs = aeqd_proj
   )
 }
 
@@ -125,13 +114,18 @@ sf_INDEP <- make_sf(trend_INDEP$mean, trend_INDEP$sd)
 sf_BM    <- make_sf(trend_BM$mean, trend_BM$sd)
 sf_BMP   <- make_sf(trend_BMP$mean, trend_BMP$sd)
 
-world <- ne_countries(scale="medium", returnclass="sf")
-world_north <- world[st_coordinates(st_centroid(world))[,2] > 0,]
-world_aeqd <- st_transform(world_north, crs=aeqd_proj)
+world <- ne_countries(scale = "medium", returnclass = "sf")
+world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
+world_aeqd <- st_transform(world_north, crs = aeqd_proj)
 
-rg_mean <- range(trend_INDEP$mean,
-                 trend_BM$mean,
-                 trend_BMP$mean)
+# ------------------------------------------------------------
+# 5️⃣ Mean map
+# ------------------------------------------------------------
+rg_mean <- range(
+  trend_INDEP$mean,
+  trend_BM$mean,
+  trend_BMP$mean
+)
 
 plot_mean <- function(sf_obj, title) {
   ggplot() +
@@ -161,13 +155,11 @@ p1 <- plot_mean(sf_INDEP, "Aggregated Trend - IND")
 p2 <- plot_mean(sf_BM, "Aggregated Trend - Weekly BYM")
 p3 <- plot_mean(sf_BMP, "Aggregated Trend - Weekly BYM+")
 
-cowplot::plot_grid(p1, p2, p3, nrow=1)
-
+cowplot::plot_grid(p1, p2, p3, nrow = 1)
 
 # ------------------------------------------------------------
-#  SD MAP (log scale)
+# 6️⃣ SD map
 # ------------------------------------------------------------
-
 rg_sd <- range(
   log(trend_INDEP$sd),
   log(trend_BM$sd),
@@ -177,17 +169,15 @@ rg_sd <- range(
 plot_sd <- function(sf_obj, title) {
   ggplot() +
     geom_sf(data = world_aeqd, fill = "lightgray", color = NA) +
-    geom_sf(data = sf_obj,
-            aes(color = log(sd)),
-            size = 2, shape = 18) +
+    geom_sf(data = sf_obj, aes(color = log(sd)), size = 2, shape = 18) +
     geom_sf(data = world_aeqd, fill = NA, color = "black") +
     scale_color_viridis_c(
       option = "C",
       direction = 1,
       limits = rg_sd,
       guide = guide_colorbar(
-        barwidth = 20,   
-        barheight = 0.5 
+        barwidth = 20,
+        barheight = 0.5
       )
     ) +
     theme_minimal() +
@@ -203,14 +193,14 @@ p5 <- plot_sd(sf_BM, "Aggregated Trend log(SD) - Weekly BYM")
 p6 <- plot_sd(sf_BMP, "Aggregated Trend log(SD) - Weekly BYM+")
 
 cowplot::plot_grid(p4, p5, p6, nrow = 1)
-
 cowplot::plot_grid(p3, p6, nrow = 1)
 
-
+# ------------------------------------------------------------
+# 7️⃣ Table
+# ------------------------------------------------------------
 make_table_row <- function(trend) {
-  
-  inc_total  <- sum(trend$mean > 0)
-  dec_total  <- sum(trend$mean < 0)
+  inc_total <- sum(trend$mean > 0)
+  dec_total <- sum(trend$mean < 0)
   
   inc_sig <- sum(trend$lower > 0)
   dec_sig <- sum(trend$upper < 0)
@@ -233,7 +223,6 @@ tb <- rbind(
 colnames(tb) <- c("Increase", "Decrease", "Mean", "Median", "SD")
 rownames(tb) <- c("IND", "BYM", "BYM+")
 
-# LaTeX table (with vertical lines)
 kable(
   tb,
   format = "latex",
@@ -242,14 +231,9 @@ kable(
   col.names = colnames(tb)
 )
 
-colnames(tb) <- c("Decrease","Increase","Mean","Median","SD")
-rownames(tb) <- c("IND","BYM","BYM+")
-
-knitr::kable(tb, format="latex", digits=4)
-
 # ------------------------------------------------------------
 # 8️⃣ Regression
 # ------------------------------------------------------------
 M1 <- lm(trend_BM$mean ~ lats + elev)
-knitr::kable(summary(M1)$coefficients,
-             format="latex", digits=5)
+knitr::kable(summary(M1)$coefficients, format = "latex", digits = 5)
+
