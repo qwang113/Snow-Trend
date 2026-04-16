@@ -1,6 +1,7 @@
+rm(list = ls())
 library(dplyr)
 library(ggplot2)
-
+df = read.csv("D:/Snow-Trend/py_models/PPC/ppp_weekly.csv")
 df <- df %>%
   mutate(
     extreme = (p_value < 0.05 | p_value > 0.95)

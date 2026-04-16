@@ -272,7 +272,10 @@ plot_model <- function(arr){
       geom_line(aes(y=mean), color="blue") +
       geom_line(aes(y=truth), color="red") +
       ggtitle(names(ids)[i]) +
-      theme_minimal()
+      theme_minimal() + 
+      theme(
+        plot.title = element_text(hjust = 0.5)
+      )
     
     plots[[i]] <- p
   }

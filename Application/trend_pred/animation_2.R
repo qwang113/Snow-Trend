@@ -33,7 +33,7 @@ cat("FULL S =", S, "\n")
 # ============================================================
 # 2️⃣ Load BYM weekly + cov (strict version, NPZ)
 # ============================================================
-bymp_data <- np$load("trend_ind_full.npz", allow_pickle=TRUE)
+bymp_data <- np$load("D:/77/research/temp/snow/trend_weekly_bym+cov.npz", allow_pickle=TRUE)
 
 weekly_ini_BMP   <- bymp_data$f[["weekly_ini"]]
 weekly_final_BMP <- bymp_data$f[["weekly_final"]]
@@ -95,37 +95,54 @@ rg_mean <- range(diff_mean)
 # ============================================================
 # 7️⃣ Animated GIF (BYM weekly + cov only)
 # ============================================================
-for(i in 1:52){
+
+all_vals <- as.numeric(diff_mean)
+# q_global <- quantile(all_vals, c(0.025, 0.975), na.rm = TRUE)
+q_global <- c(-0.25,0.25)
+
+# ============================================================
+# 7️⃣ Plot loop
+# ============================================================
+for(i in 2:52){
   
   trend_sf$val <- trend_sf[[i]]
   
   p <- ggplot() +
     geom_sf(data=world_aeqd, fill="lightgray", color=NA) +
+    
     geom_sf(data=trend_sf,
             aes(color=val),
             size=3, shape=18) +
+    
     geom_sf(data=world_aeqd, fill=NA, color="black") +
+    
     geom_sf(data=equator_aeqd,
             color="red", linetype="dashed", size=0.1) +
+    
     scale_color_gradient2(
       low="red",
       mid="white",
       high="blue",
       midpoint=0,
-      limits=rg_mean,
+      limits=q_global,
+      oob=scales::squish,
       guide=guide_colorbar(barwidth=25, barheight=0.5)
     ) +
+    
     theme_minimal() +
+    
     labs(
-      title=paste("Trend Mean (ind) - Week", wk_names[i]),
+      title=paste("Trend Mean (bym+) - Week", wk_names[i]),
       color=""
     ) +
+    
     annotate("text",
              x = -7000000,
              y = -1000000,
              label = month_abbr[i],
              size = 14,
              fontface = "bold") +
+    
     theme(
       legend.position="bottom",
       plot.title=element_text(hjust=0.5)
@@ -133,18 +150,25 @@ for(i in 1:52){
   
   ggsave(paste0("plot_",i,".png"),
          plot=p,
-         width=10,height=10,dpi=120)
+         width=10,
+         height=10,
+         dpi=150)
 }
 
 # ============================================================
 # 8️⃣ Create GIF
 # ============================================================
+
 png_files <- list.files(pattern="plot_\\d+\\.png$")
 png_files <- png_files[order(as.numeric(gsub("\\D","",png_files)))]
 
+png_files <- png_files[as.numeric(gsub("\\D","",png_files)) >= 2]
+
+library(magick)
+
 gif <- image_read(png_files)
 gif <- image_animate(gif, fps=5)
-image_write(gif, "animation_ind.gif")
+image_write(gif, "animation_bym+.gif")
 
 pos_count <- colSums(diff_mean > 0)[-1]
 df_plot <- data.frame(
@@ -189,12 +213,13 @@ p1 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=rg_mean,
+    limits=q_global,          # 🔥 用quantile
+    oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
   theme_minimal() +
   labs(
-    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    title=paste("Trend Mean - Week", wk_names[i]),
     color=""
   ) +
   annotate("text",
@@ -225,12 +250,13 @@ p2 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=rg_mean,
+    limits=q_global,          # 🔥 用quantile
+    oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
   theme_minimal() +
   labs(
-    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    title=paste("Trend Mean - Week", wk_names[i]),
     color=""
   ) +
   annotate("text",
@@ -267,12 +293,13 @@ p1 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=rg_mean,
+    limits=q_global,          # 🔥 用quantile
+    oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
   theme_minimal() +
   labs(
-    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    title=paste("Trend Mean - Week", wk_names[i]),
     color=""
   ) +
   annotate("text",
@@ -303,12 +330,13 @@ p2 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=rg_mean,
+    limits=q_global,          # 🔥 用quantile
+    oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
   theme_minimal() +
   labs(
-    title=paste("Trend Mean (BYM Weekly + Covariates) - Week", wk_names[i]),
+    title=paste("Trend Mean - Week", wk_names[i]),
     color=""
   ) +
   annotate("text",

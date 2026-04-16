@@ -1,13 +1,16 @@
 rm(list = ls())
-library(sf)
-library(dplyr)
-library(ggplot2)
+
 library(reticulate)
-library(Matrix)
-library(igraph)
+library(ggplot2)
+library(patchwork)
+
+# =====================================================
+# CONFIG
+# =====================================================
 BASE_DIR <- "D:/77/Research/temp/snow"
+
 period <- 52
-thin <- 15
+thin2 <- 15
 
 locations <- c(70, 1400)
 weeks <- c(20, 35)
@@ -16,89 +19,80 @@ year <- 20
 times <- (year * 52 + weeks - 1)
 chains <- 0:9
 
-no_nbs <- c(
-  57,170,236,269,343,685,946,947,989,
-  1037,1084,1090,1109,1118,1127,1176,1203
-)
-snow_cleaned_full <- readRDS("snow_cleaned_full.Rda")
+# =====================================================
+# LOAD DATA
+# =====================================================
+snow <- readRDS("snow_cleaned_full.Rda")
 
-coords_full <- as.matrix(snow_cleaned_full[,1:2])
-y_full <- as.matrix(snow_cleaned_full[,-c(1,2)])
-
-coords_tmp <- coords_full[-no_nbs,]
-y_tmp <- y_full[-no_nbs,]
-
-
-coords_sf <- st_as_sf(
-  data.frame(lon=coords_tmp[,1], lat=coords_tmp[,2]),
-  coords=c("lon","lat"),
-  crs=4326
-)
-
-coords_proj <- st_transform(coords_sf, "+proj=aeqd +lat_0=90 +lon_0=-100")
-
-xy <- st_coordinates(coords_proj) / 1e6
-
-D <- as.matrix(dist(xy))
-W <- (D <= 0.22) * 1
-diag(W) <- 0
-
-g <- graph_from_adjacency_matrix(W, mode="undirected")
-
-comp <- components(g)
-sizes <- comp$csize
-order <- order(sizes, decreasing=TRUE)
-
-keep <- which(comp$membership %in% order[1:2])
-
-coords <- coords_tmp[keep,]
-y <- y_tmp[keep,]
+coords <- as.matrix(snow[,1:2])
+y <- as.matrix(snow[,-c(1,2)])
 
 S <- nrow(y)
 TT <- ncol(y)
 
-cat("Using S =", S, "\n")
+cat("Using FULL S =", S, "TT =", TT, "\n")
 
-# ---- lat
+# =====================================================
+# COVARIATES（完全对齐Python）
+# =====================================================
+
 lat <- scale(coords[,2])[,1]
 
-# ---- elevation
+no_nbs <- c(
+  57,170,236,269,343,685,946,947,989,
+  1037,1084,1090,1109,1118,1127,1176,1203
+)
+
 elev_raw <- read.csv(file.path(BASE_DIR,"curr_elev.csv"))[,4]
-elev <- scale(elev_raw[keep])[,1]
 
-# ---- temperature
-load(file.path(BASE_DIR,"snow_temp_full.Rda"))
-temp_full <- as.matrix(sce_temp[-no_nbs, -c(1,2)])
-temp <- scale(temp_full[keep,])  # same global scaling
+nnbs_elev <- read.table(
+  file.path(BASE_DIR,"nnbs_elev.csv"),
+  sep="\t",
+  header=TRUE,
+  row.names=NULL
+)[,3]
 
-# ---- time
+elev_all <- rep(0, S)
+mask <- rep(TRUE, S)
+mask[no_nbs] <- FALSE
+
+elev_all[mask] <- elev_raw
+elev_all[no_nbs] <- nnbs_elev
+
+elev <- scale(elev_all)[,1]
+
+load("snow_temp_full.Rda")
+snow_temp <- sce_temp
+
+temp_full <- as.matrix(snow_temp[,-c(1,2)])
+temp_scaled <- scale(temp_full)
+
 t_full <- 1:TT
-t_scaled <- scale(t_full)[,1]
+t_scaled_full <- scale(t_full)[,1]
 
-use_python("D:/anaconda3/envs/CPD/python.exe", required = TRUE)
+# =====================================================
+# LOAD CHAINS（稳定R版）
+# =====================================================
+
 np <- import("numpy")
-pickle <- import("pickle")
 
-load_bym <- function(prefix, use_cov=FALSE){
+load_bym <- function(prefix){
   
   eta_list <- list()
   tau_list <- list()
   
   for(c in chains){
     
-    fname <- if(use_cov){
-      sprintf("%s_chain%d+cov.pkl", prefix, c)
-    } else {
-      sprintf("%s_chain%d.pkl", prefix, c)
-    }
+    d <- np$load(file.path(BASE_DIR,
+                           sprintf("%s_chain%d.npz", prefix, c)))
     
-    path <- file.path(BASE_DIR, fname)
-    py_file <- import_builtins()$open(path, "rb")
-    d <- pickle$load(py_file)
-    py_file$close()
+    eta <- d[["eta"]]
+    tau <- d[["tau"]]
     
-    eta <- d$eta[, seq(1, dim(d$eta)[2], by=thin)]
-    tau <- d$tau[, seq(1, dim(d$tau)[2], by=thin)]
+    idx <- seq(1, dim(eta)[2], by = thin2)
+    
+    eta <- eta[, idx, drop=FALSE]
+    tau <- tau[, idx, drop=FALSE]
     
     eta_list[[length(eta_list)+1]] <- eta
     tau_list[[length(tau_list)+1]] <- tau
@@ -113,12 +107,14 @@ load_ind <- function(prefix){
   
   for(c in chains){
     
-    path <- file.path(BASE_DIR, sprintf("%s_chain%d.npz", prefix, c))
-    
-    d <- np$load(path)
+    d <- np$load(file.path(BASE_DIR,
+                           sprintf("%s_chain%d.npz", prefix, c)))
     
     key <- d$files[[1]]
-    eta <- d[[key]][ , seq(1, dim(d[[key]])[2], by=thin)]
+    eta <- d[[key]]
+    
+    idx <- seq(1, dim(eta)[2], by = thin2)
+    eta <- eta[, idx, drop=FALSE]
     
     eta_list[[length(eta_list)+1]] <- eta
   }
@@ -126,95 +122,22 @@ load_ind <- function(prefix){
   eta_list
 }
 
-compute_p_bym <- function(eta01_list, tau01_list,
-                          eta10_list, tau10_list){
-  
-  results <- list()
-  
-  for(s in locations){
-    for(t in times){
-      
-      w <- t %% 52
-      t_s <- t_scaled[t]
-      
-      cov4 <- c(
-        1,
-        cos(2*pi*(t+1)/period),
-        sin(2*pi*(t+1)/period),
-        t_s
-      )
-      
-      chains_out <- list()
-      
-      for(c in 1:length(eta01_list)){
-        
-        eta01 <- eta01_list[[c]]
-        tau01 <- tau01_list[[c]]
-        
-        eta10 <- eta10_list[[c]]
-        tau10 <- tau10_list[[c]]
-        
-        phi01 <- rep(0, ncol(eta01))
-        phi10 <- rep(0, ncol(eta10))
-        
-        # ----------------------------
-        # spatial weekly part
-        # ----------------------------
-        for(k in 1:8){
-          
-          beta01 <- eta01[(k-1)*S + s,] * tau01[(k-1)*52 + w,]
-          beta10 <- eta10[(k-1)*S + s,] * tau10[(k-1)*52 + w,]
-          
-          phi01 <- phi01 + beta01 * cov4[(k-1)%/%2 + 1]
-          phi10 <- phi10 + beta10 * cov4[(k-1)%/%2 + 1]
-        }
-        
-        # ----------------------------
-        # covariates
-        # ----------------------------
-        gamma01 <- eta01[(8*S+1):(8*S+3),]
-        gamma10 <- eta10[(8*S+1):(8*S+3),]
-        
-        phi01 <- phi01 + gamma01[1,]*t_s*lat[s]
-        phi01 <- phi01 + gamma01[2,]*t_s*elev[s]
-        phi01 <- phi01 + gamma01[3,]*t_s*temp[s,t]
-        
-        phi10 <- phi10 + gamma10[1,]*t_s*lat[s]
-        phi10 <- phi10 + gamma10[2,]*t_s*elev[s]
-        phi10 <- phi10 + gamma10[3,]*t_s*temp[s,t]
-        
-        # ----------------------------
-        # probability (CRITICAL)
-        # ----------------------------
-        p01 <- 1/(1+exp(-phi01))
-        p10 <- 1/(1+exp(-phi10))
-        
-        if(y[s,t]==0){
-          p_final <- p01
-        } else {
-          p_final <- 1 - p10
-        }
-        
-        chains_out[[c]] <- p_final
-      }
-      
-      results[[paste(s,t,sep="_")]] <- chains_out
-    }
-  }
-  
-  results
-}
+# =====================================================
+# POSTERIOR（完全复刻Python）
+# =====================================================
 
-compute_p_bym_nocov <- function(eta01_list, tau01_list,
-                                eta10_list, tau10_list){
+compute_p_bym <- function(eta01_list, tau01_list,
+                          eta10_list, tau10_list,
+                          use_cov=TRUE){
   
+  K_total <- 8
   results <- list()
   
   for(s in locations){
     for(t in times){
       
       w <- t %% 52
-      t_s <- t_scaled[t]
+      t_s <- t_scaled_full[t]
       
       cov4 <- c(
         1,
@@ -229,19 +152,40 @@ compute_p_bym_nocov <- function(eta01_list, tau01_list,
         
         eta01 <- eta01_list[[c]]
         tau01 <- tau01_list[[c]]
+        
         eta10 <- eta10_list[[c]]
         tau10 <- tau10_list[[c]]
         
         phi01 <- rep(0, ncol(eta01))
         phi10 <- rep(0, ncol(eta10))
         
-        for(k in 1:8){
+        for(k in 1:K_total){
           
-          beta01 <- eta01[(k-1)*S + s,] * tau01[(k-1)*52 + w,]
-          beta10 <- eta10[(k-1)*S + s,] * tau10[(k-1)*52 + w,]
+          phi01 <- phi01 +
+            eta01[(k-1)*S + s,] *
+            tau01[(k-1)*52 + w + 1,] *
+            cov4[(k-1)%/%2 + 1]
           
-          phi01 <- phi01 + beta01 * cov4[(k-1)%/%2 + 1]
-          phi10 <- phi10 + beta10 * cov4[(k-1)%/%2 + 1]
+          phi10 <- phi10 +
+            eta10[(k-1)*S + s,] *
+            tau10[(k-1)*52 + w + 1,] *
+            cov4[(k-1)%/%2 + 1]
+        }
+        
+        if(use_cov){
+          
+          gamma01 <- eta01[(K_total*S+1):(K_total*S+3),]
+          gamma10 <- eta10[(K_total*S+1):(K_total*S+3),]
+          
+          phi01 <- phi01 +
+            gamma01[1,]*t_s*lat[s] +
+            gamma01[2,]*t_s*elev[s] +
+            gamma01[3,]*t_s*temp_scaled[s,t]
+          
+          phi10 <- phi10 +
+            gamma10[1,]*t_s*lat[s] +
+            gamma10[2,]*t_s*elev[s] +
+            gamma10[3,]*t_s*temp_scaled[s,t]
         }
         
         p01 <- 1/(1+exp(-phi01))
@@ -265,13 +209,13 @@ compute_p_bym_nocov <- function(eta01_list, tau01_list,
 
 compute_p_ind <- function(eta01_list, eta10_list){
   
-  K <- 4  # cov4
+  K <- 4
   results <- list()
   
   for(s in locations){
     for(t in times){
       
-      t_s <- t_scaled[t]
+      t_s <- t_scaled_full[t]
       
       cov4 <- c(
         1,
@@ -290,21 +234,25 @@ compute_p_ind <- function(eta01_list, eta10_list){
         phi01 <- rep(0, ncol(eta01))
         phi10 <- rep(0, ncol(eta10))
         
-        # -------- IND linear predictor --------
+        # ----------------------------
+        # linear predictor
+        # ----------------------------
         for(k in 1:K){
           
-          beta01 <- eta01[(k-1)*S + s,]
-          beta10 <- eta10[(k-1)*S + s,]
-          
-          phi01 <- phi01 + beta01 * cov4[k]
-          phi10 <- phi10 + beta10 * cov4[k]
+          phi01 <- phi01 + eta01[(k-1)*S + s,] * cov4[k]
+          phi10 <- phi10 + eta10[(k-1)*S + s,] * cov4[k]
         }
         
-        # -------- probability --------
+        # ----------------------------
+        # probability
+        # ----------------------------
         p01 <- 1/(1+exp(-phi01))
         p10 <- 1/(1+exp(-phi10))
         
-        if(y[s,t]==0){
+        # ----------------------------
+        # Markov transition（关键）
+        # ----------------------------
+        if(y[s,t] == 0){
           p_final <- p01
         } else {
           p_final <- 1 - p10
@@ -320,131 +268,226 @@ compute_p_ind <- function(eta01_list, eta10_list){
   results
 }
 
-build_trace_df <- function(results, model){
+# =====================================================
+# PLOT
+# =====================================================
+
+plot_model <- function(results, name){
   
-  df <- data.frame()
+  plots <- list()
   
-  for(name in names(results)){
-    
-    parts <- strsplit(name, "_")[[1]]
-    s <- parts[1]
-    t <- parts[2]
-    
-    chains_list <- results[[name]]
-    
-    for(c in 1:length(chains_list)){
+  for(s in locations){
+    for(t in times){
       
-      vals <- chains_list[[c]]
+      chains <- results[[paste(s,t,sep="_")]]
+      df <- as.data.frame(do.call(cbind, chains))
       
-      df <- rbind(df, data.frame(
-        iter = 1:length(vals),
-        value = vals,
-        chain = factor(paste0("chain", c)),
-        location = paste0("loc", s),
-        week = paste0("week", (as.numeric(t) %% 52)+1),
-        model = model
-      ))
+      df$iter <- 1:nrow(df)
+      
+      df_long <- reshape(df,
+                         varying=1:(ncol(df)-1),
+                         v.names="value",
+                         timevar="chain",
+                         times=1:(ncol(df)-1),
+                         direction="long")
+      
+      p <- ggplot(df_long, aes(iter, value, color=factor(chain))) +
+        geom_line(alpha=0.6) +
+        ggtitle(paste(name,
+                      "loc",s,
+                      "week", t %% 52 + 1)) +
+        ylim(0,1) +
+        theme_minimal()
+      
+      plots[[length(plots)+1]] <- p
     }
   }
   
-  df
+  wrap_plots(plots)
 }
 
+# =====================================================
+# RUN
+# =====================================================
 
+cat("Loading chains...\n")
 
-bym01_cov <- load_bym("bym01", TRUE)
-bym10_cov <- load_bym("bym10", TRUE)
+bym01_cov <- load_bym("p01_weekly_cov")
+bym10_cov <- load_bym("p10_weekly_cov")
 
-bym01 <- load_bym("bym01", FALSE)
-bym10 <- load_bym("bym10", FALSE)
+bym01 <- load_bym("p01_weekly")
+bym10 <- load_bym("p10_weekly")
 
-ind01 <- load_ind("ind01")
-ind10 <- load_ind("ind10")
+ind01 <- load_ind("p01_ind_all")
+ind10 <- load_ind("p10_ind_all")
+
+cat("Computing...\n")
 
 res_cov <- compute_p_bym(
   bym01_cov$eta, bym01_cov$tau,
-  bym10_cov$eta, bym10_cov$tau
+  bym10_cov$eta, bym10_cov$tau,
+  TRUE
 )
 
-res_bym <- compute_p_bym_nocov(
+res_bym <- compute_p_bym(
   bym01$eta, bym01$tau,
-  bym10$eta, bym10$tau
+  bym10$eta, bym10$tau,
+  FALSE
 )
-res_ind <- compute_p_ind(ind01, ind10)
-df_ind <- build_trace_df(res_ind, "Independent")
-df_cov <- build_trace_df(res_cov, "BYM+Cov")
-df_bym <- build_trace_df(res_bym, "BYM")
-df_all <- rbind(df_ind, df_cov, df_bym)
 
-ggplot(df_all, aes(x=iter, y=value, color=chain)) +
-  geom_line(alpha=0.6, size=0.3) +
-  facet_grid(model ~ location + week) +
-  theme_bw() +
-  labs(
-    x="Iteration",
-    y="Predicted probability of locations covered by snow"
-  ) +
-  theme(
-    legend.position="bottom",
-    plot.title = element_text(hjust=0.5)
+res_ind <- compute_p_ind(
+  ind01, ind10
+)
+
+cat("Plotting...\n")
+
+cat("Plotting...\n")
+
+plot_all_models <- function(res_cov, res_bym, res_ind){
+  
+  build_df <- function(results, model_name){
+    
+    out <- list()
+    
+    for(name in names(results)){
+      
+      chains <- results[[name]]
+      mat <- do.call(cbind, chains)
+      
+      df <- as.data.frame(mat)
+      df$iter <- 1:nrow(df)
+      
+      df_long <- reshape(df,
+                         varying=1:(ncol(df)-1),
+                         v.names="value",
+                         timevar="chain",
+                         times=1:(ncol(df)-1),
+                         direction="long")
+      
+      parts <- strsplit(name, "_")[[1]]
+      s <- as.numeric(parts[1])
+      t <- as.numeric(parts[2])
+      
+      df_long$location <- paste0("loc", s)
+      df_long$week <- paste0("week", t %% 52 + 1)
+      df_long$model <- model_name
+      
+      out[[length(out)+1]] <- df_long
+    }
+    
+    do.call(rbind, out)
+  }
+  
+  df_all <- rbind(
+    build_df(res_bym, "BYM"),
+    build_df(res_cov, "BYM+Cov"),
+    build_df(res_ind, "Independent")
   )
-
-
-
-extract_gamma_trace <- function(eta_list, S, label_prefix){
   
-  cov_names <- c("lat × trend", "elev × trend", "temp × trend")
+  ggplot(df_all, aes(iter, value, color=factor(chain))) +
+    geom_line(alpha=0.6) +
+    facet_grid(model ~ location + week) +
+    ylim(0,1) +
+    scale_color_discrete(
+      name = "Chain",
+      labels = 0:9
+    ) +
+    theme_bw() +
+    theme(
+      panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+      strip.background = element_rect(fill = "grey85", color = "black"),
+      strip.text = element_text(size = 10, face = "bold"),
+      panel.spacing = unit(0.8, "lines"),
+      panel.background = element_rect(fill = "white"),
+      panel.grid.major = element_line(color = "grey80", size = 0.5),
+      panel.grid.minor = element_line(color = "grey90", size = 0.3),
+      plot.background = element_rect(fill = "white", color = NA),
+      legend.position = "bottom",
+      strip.placement = "outside"
+    )
+}
+
+plot_all_models(res_cov, res_bym, res_ind)
+
+extract_gamma <- function(eta_list, label){
   
-  df <- data.frame()
+  # gamma 在最后 3 行
+  # (8*S+1):(8*S+3)
+  
+  out <- list()
   
   for(c in 1:length(eta_list)){
     
     eta <- eta_list[[c]]
     
-    gamma <- eta[(8*S+1):(8*S+3), ]   # 3 × M
+    gamma <- eta[(8*S+1):(8*S+3), , drop=FALSE]   # 3 × M
     
-    for(k in 1:3){
-      
-      vals <- gamma[k, ]
-      
-      df <- rbind(df, data.frame(
-        iter = 1:length(vals),
-        value = vals,
-        chain = factor(paste0("chain", c)),
-        covariate = cov_names[k],
-        type = label_prefix   # "01" or "10"
-      ))
-    }
+    df <- as.data.frame(t(gamma))   # M × 3
+    colnames(df) <- c("lat_trend", "elev_trend", "temp_trend")
+    
+    df$iter <- 1:nrow(df)
+    df$chain <- paste0("chain", c)
+    df$transition <- label
+    
+    out[[c]] <- df
   }
   
-  df
+  do.call(rbind, out)
 }
-df_gamma01 <- extract_gamma_trace(bym01_cov$eta, S, "0→1")
-df_gamma10 <- extract_gamma_trace(bym10_cov$eta, S, "1→0")
 
-df_gamma_all <- rbind(df_gamma01, df_gamma10)
+gamma01_df <- extract_gamma(bym01_cov$eta, "0→1")
+gamma10_df <- extract_gamma(bym10_cov$eta, "1→0")
 
-df_gamma_all$type <- factor(df_gamma_all$type, levels = c("0→1", "1→0"))
-df_gamma_all$covariate <- factor(
-  df_gamma_all$covariate,
-  levels = c("lat × trend", "elev × trend", "temp × trend")
+gamma_all <- rbind(gamma01_df, gamma10_df)
+
+library(tidyr)
+
+gamma_long <- pivot_longer(
+  gamma_all,
+  cols = c(lat_trend, elev_trend, temp_trend),
+  names_to = "covariate",
+  values_to = "value"
 )
 
-ggplot(df_gamma_all, aes(x=iter, y=value, color=chain)) +
-  geom_line(alpha=0.6, size=0.3) +
-  facet_grid(covariate ~ type) +
-  theme_bw() +
+gamma_long$covariate <- factor(
+  gamma_long$covariate,
+  levels = c("lat_trend", "elev_trend", "temp_trend"),
+  labels = c("lat × trend", "elev × trend", "temp × trend")
+)
+ggplot(gamma_long,
+       aes(iter, value, color = factor(chain))) +
+  
+  geom_line(alpha = 0.6) +
+  
+  facet_grid(covariate ~ transition, switch = "y") +
+  
   labs(
-    x="Iteration",
-    y="Coefficient value",
-    title="Traceplots of Covariate Effects"
+    title = "",
+    x = "Iteration",
+    y = "Coefficient value"
   ) +
+  
+  ylim(-0.35, 0.5) +
+  
+  scale_color_discrete(
+    name = "Chain",
+    labels = 0:9
+  ) +
+  
   theme(
-    legend.position="bottom",
+    panel.border = element_rect(color = "black", fill = NA, size = 0.5),
     
-    strip.text.y = element_text(size=13, face="bold"),
+    strip.background = element_rect(fill = "grey85", color = "black"),
+    strip.text = element_text(size = 11, face = "bold"),
     
-    strip.text.x = element_text(size=13, face="bold"),
+    panel.spacing = unit(0.8, "lines"),
     
-    plot.title = element_text(size=14, hjust=0.5, face="bold")
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line(color = "grey80", size = 0.5),
+    panel.grid.minor = element_line(color = "grey90", size = 0.3),
+    
+    legend.position = "bottom",
+    strip.placement = "outside",
+    legend.key = element_blank()
   )
+

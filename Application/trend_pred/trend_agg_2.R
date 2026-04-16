@@ -153,7 +153,7 @@ plot_mean <- function(sf_obj, title) {
 
 p1 <- plot_mean(sf_INDEP, "Aggregated Trend - IND")
 p2 <- plot_mean(sf_BM, "Aggregated Trend - Weekly BYM")
-p3 <- plot_mean(sf_BMP, "Aggregated Trend - Weekly BYM+")
+p3 <- plot_mean(sf_BMP, "Aggregated Trend - BYM+")
 
 cowplot::plot_grid(p1, p2, p3, nrow = 1)
 
@@ -190,7 +190,7 @@ plot_sd <- function(sf_obj, title) {
 
 p4 <- plot_sd(sf_INDEP, "Aggregated Trend log(SD) - IND")
 p5 <- plot_sd(sf_BM, "Aggregated Trend log(SD) - Weekly BYM")
-p6 <- plot_sd(sf_BMP, "Aggregated Trend log(SD) - Weekly BYM+")
+p6 <- plot_sd(sf_BMP, "Aggregated Trend log(SD) - BYM+")
 
 cowplot::plot_grid(p4, p5, p6, nrow = 1)
 cowplot::plot_grid(p3, p6, nrow = 1)
@@ -236,4 +236,47 @@ kable(
 # ------------------------------------------------------------
 M1 <- lm(trend_BM$mean ~ lats + elev)
 knitr::kable(summary(M1)$coefficients, format = "latex", digits = 5)
+
+
+df_scatter <- data.frame(
+  lat = lats,
+  trend_ind  = trend_INDEP$mean,
+  trend_bym  = trend_BM$mean,
+  trend_bymp = trend_BMP$mean
+)
+
+p_lat_bymp <- ggplot(df_scatter, aes(x = lat, y = trend_bymp)) +
+  geom_point(alpha = 0.4, size = 1.5) +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  theme_minimal() +
+  labs(
+    title = "Trend vs Latitude (BYM+)",
+    x = "Latitude (scaled)",
+    y = "Trend estimate"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_lat_bymp
+
+# ------------------------------------------------------------
+# Scatter: Trend vs Elevation
+# ------------------------------------------------------------
+
+df_scatter$elev <- elev
+df_scatter$elev_raw <- scale(elev_all)
+
+p_elev <- ggplot(df_scatter, aes(x = elev_raw, y = trend_bymp)) +
+  geom_point(alpha = 0.4, size = 1.5) +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  theme_minimal() +
+  labs(
+    title = "Trend vs Elevation (BYM+)",
+    x = "Elevation",
+    y = "Trend estimate"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_elev
+
+
 
