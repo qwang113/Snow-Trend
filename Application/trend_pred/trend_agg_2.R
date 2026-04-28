@@ -151,9 +151,9 @@ plot_mean <- function(sf_obj, title) {
     )
 }
 
-p1 <- plot_mean(sf_INDEP, "Aggregated Trend - IND")
-p2 <- plot_mean(sf_BM, "Aggregated Trend - Weekly BYM")
-p3 <- plot_mean(sf_BMP, "Aggregated Trend - BYM+")
+p1 <- plot_mean(sf_INDEP, "Annual Trend - IND")
+p2 <- plot_mean(sf_BM, "Annual Trend - Weekly BYM")
+p3 <- plot_mean(sf_BMP, "Annual Trend - BYM+")
 
 cowplot::plot_grid(p1, p2, p3, nrow = 1)
 
@@ -188,9 +188,9 @@ plot_sd <- function(sf_obj, title) {
     )
 }
 
-p4 <- plot_sd(sf_INDEP, "Aggregated Trend log(SD) - IND")
-p5 <- plot_sd(sf_BM, "Aggregated Trend log(SD) - Weekly BYM")
-p6 <- plot_sd(sf_BMP, "Aggregated Trend log(SD) - BYM+")
+p4 <- plot_sd(sf_INDEP, "Annual Trend log(SD) - IND")
+p5 <- plot_sd(sf_BM, "Annual Trend log(SD) - Weekly BYM")
+p6 <- plot_sd(sf_BMP, "Annual Trend log(SD) - BYM+")
 
 cowplot::plot_grid(p4, p5, p6, nrow = 1)
 cowplot::plot_grid(p3, p6, nrow = 1)
@@ -248,11 +248,12 @@ df_scatter <- data.frame(
 p_lat_bymp <- ggplot(df_scatter, aes(x = lat, y = trend_bymp)) +
   geom_point(alpha = 0.4, size = 1.5) +
   geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
   theme_minimal() +
   labs(
     title = "Trend vs Latitude (BYM+)",
     x = "Latitude (scaled)",
-    y = "Trend estimate"
+    y = "Trend Estimate"
   ) +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -268,15 +269,92 @@ df_scatter$elev_raw <- scale(elev_all)
 p_elev <- ggplot(df_scatter, aes(x = elev_raw, y = trend_bymp)) +
   geom_point(alpha = 0.4, size = 1.5) +
   geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
   theme_minimal() +
   labs(
     title = "Trend vs Elevation (BYM+)",
-    x = "Elevation",
-    y = "Trend estimate"
+    x = "Elevation (scaled)",
+    y = "Trend Estimate"
   ) +
   theme(plot.title = element_text(hjust = 0.5))
 
 p_elev
 
+load("snow_temp_full.Rda")
+snow_temp <- sce_temp
+temp_full <- as.matrix(snow_temp[,-c(1,2)])
+temp_scaled <- scale(temp_full)
+
+period <- 52
+TT <- ncol(temp_full)
+
+w_t <- ((1:TT - 1) %% period) + 1
+t_scaled <- as.numeric(scale(1:TT))
+
+S <- nrow(temp_full)
+
+alpha <- rep(NA, S)
+
+for (s in 1:S) {
+  
+  y <- temp_full[s, ]
+  
+  if (any(is.na(y))) next
+  
+  df <- data.frame(
+    y = y,
+    t = t_scaled,
+    w = factor(w_t)
+  )
+  
+  fit <- lm(y ~ t + w, data = df)
+  
+  alpha[s] <- coef(fit)["t"]
+}
+
+
+df_temp <- data.frame(
+  trend = trend_BMP$mean,
+  alpha = alpha
+)
+
+df_temp <- df_temp[complete.cases(df_temp), ]
+
+p_temp <- ggplot(df_temp, aes(x = alpha, y = trend)) +
+  geom_point(alpha = 0.35, size = 1.5) +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Trend vs Temperature Trend (BYM+)",
+    x = "Temperature Trend",
+    y = "Trend Estimate"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_temp
+
+
+# ------------------------------------------------------------
+# Scatter: Trend vs Longitude
+# ------------------------------------------------------------
+
+lons <- as.numeric(scale(coords[, 1]))
+
+df_scatter$lon <- lons
+
+p_lon <- ggplot(df_scatter, aes(x = lon, y = trend_bymp)) +
+  geom_point(alpha = 0.4, size = 1.5) +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Trend vs Longitude (BYM+)",
+    x = "Longitude (scaled)",
+    y = "Trend Estimate"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_lon
 
 
