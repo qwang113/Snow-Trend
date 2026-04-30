@@ -330,7 +330,7 @@ p2 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=q_global,          # 🔥 用quantile
+    limits=q_global,
     oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
@@ -353,6 +353,58 @@ p2 <- ggplot() +
 cowplot::plot_grid(p1,p2)
 
 
+library(reticulate)
+use_condaenv("CPD", required = TRUE)
+
+py_run_string("
+import numpy as np
+
+data = np.load('D:/77/research/temp/snow/trend_weekly_bym+cov.npz', allow_pickle=True)
+
+ini   = data['weekly_ini']
+final = data['weekly_final']
+
+d = final[:,:,:,0] - ini[:,:,:,0]
+
+weeks = [17,21,38,44]
+
+rows = []
+
+for w in weeks:
+    samples = d[:,:,w]
+    
+    mean = samples.mean(axis=0)
+    q025 = np.quantile(samples, 0.025, axis=0)
+    q975 = np.quantile(samples, 0.975, axis=0)
+    
+    inc = int(np.sum(mean > 0))
+    dec = int(np.sum(mean < 0))
+    
+    sig_inc = int(np.sum(q025 > 0))
+    sig_dec = int(np.sum(q975 < 0))
+    
+    rows.append((w, inc, dec, sig_inc, sig_dec, mean.mean(), np.median(mean)))
+
+# ---- build LaTeX ----
+latex = \"\"\"\\begin{table}[htbp]
+\\centering
+\\small
+\\caption{Summary of spatial snow trend changes (posterior quantile-based).}
+\\begin{tabular}{ccccccc}
+\\hline
+Week & Increase & Decrease & Sig. Increase & Sig. Decrease & Mean & Median \\\\
+\\hline
+\"\"\"
+
+for r in rows:
+    latex += \"%d & %d & %d & %d & %d & %.3f & %.3f \\\\\\n\" % r
+
+latex += \"\"\"\\hline
+\\end{tabular}
+\\end{table}\"\"\"
+
+print(latex)
+")
 
 
 

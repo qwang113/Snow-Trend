@@ -1,6 +1,6 @@
 # ================================================================
 # WEEKLY BYM + FACTOR (Double PolyGamma)
-# p01 + p10 version (FULL DATA, TOP1 optimized)
+# + NA vs Non-NA longitude (separate scaling)
 # ================================================================
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -22,13 +22,14 @@ import multiprocessing
 
 BASE_DIR = Path(r"D:\77\Research\temp\snow")
 
-burn = 3000
+burn = 10000
 thin = 2
-tot_save = 1000
+tot_save = 5000
 total_iters = burn + thin * tot_save
-n_chains = 1
+n_chains = 10
 period = 52
-
+CHAIN_START = 0
+CHAIN_END   = 4 
 
 # ================================================================
 # LOAD DATA
@@ -41,7 +42,6 @@ def load_data():
     y = snow.iloc[:, 2:].to_numpy()
 
     return coords, y
-
 
 # ================================================================
 # BUILD DATASET
@@ -69,13 +69,7 @@ def build_dataset(event):
     I_S = diags(np.ones(S))
 
     t_full = np.arange(1, TT+1)
-
-    # >>> CHANGED: scale t
     t_scaled_full = (t_full - t_full.mean()) / t_full.std()
-
-    # >>> CHANGED: square first, then scale
-    t2_full = t_full**2
-    t2_scaled_full = (t2_full - t2_full.mean()) / t2_full.std()
 
     if event == "p01":
         loc_mask = (y[:, :-1] == 0)
@@ -91,31 +85,50 @@ def build_dataset(event):
     kappa = kappa_builder(next_y)
 
     t_raw = time_idx + 1
-
-    # >>> CHANGED
     t_scaled = t_scaled_full[time_idx]
-    t2_scaled = t2_scaled_full[time_idx]
 
     week_idx = (t_raw - 1) % 52
 
-    # >>> CHANGED: cov4 -> cov5
-    cov5 = np.column_stack([
+    cov4 = np.column_stack([
         np.ones(N),
         np.cos(2*np.pi*t_raw/period),
         np.sin(2*np.pi*t_raw/period),
-        t_scaled,
-        t2_scaled
+        t_scaled
     ])
 
-    # >>> CHANGED
-    K_base = 5
-    K_total = 2 * K_base
+    K_base = 4
+    K_total = 8
 
     # ============================================================
-    # covariates (UNCHANGED)
+    # covariates
     # ============================================================
+
     lat = (coords[:,1] - coords[:,1].mean()) / coords[:,1].std()
 
+    # -------- longitude split --------
+    lon_raw = coords[:,0]
+
+    region = np.zeros(S, dtype=int)
+    region[lon_raw < -30] = 0
+    region[lon_raw >= -30] = 1
+
+    lon_na = np.zeros(S)
+    lon_euas = np.zeros(S)
+
+    mask_na = (region == 0)
+    mask_euas = (region == 1)
+
+    lon_na[mask_na] = (
+        (lon_raw[mask_na] - lon_raw[mask_na].mean()) /
+        max(lon_raw[mask_na].std(), 1e-6)
+    )
+
+    lon_euas[mask_euas] = (
+        (lon_raw[mask_euas] - lon_raw[mask_euas].mean()) /
+        max(lon_raw[mask_euas].std(), 1e-6)
+    )
+
+    # -------- elevation --------
     no_nbs = np.array([
         57,170,236,269,343,685,946,947,989,
         1037,1084,1090,1109,1118,1127,1176,1203
@@ -132,40 +145,57 @@ def build_dataset(event):
     elev_all[no_nbs] = nnbs_elev
     elev = (elev_all - elev_all.mean()) / elev_all.std()
 
+    # -------- temperature --------
     snow_temp = pyreadr.read_r(BASE_DIR/"snow_temp_full.Rda")
     temp = list(snow_temp.values())[0].iloc[:,2:].to_numpy()
     temp_scaled = (temp - temp.mean()) / temp.std()
 
-    # interactions (UNCHANGED)
-    t_lat = t_scaled * lat[row_idx]
+    # -------- interactions --------
+    t_lon_NA   = t_scaled * lon_na[row_idx]
+    t_lon_EUAS = t_scaled * lon_euas[row_idx]
+
+    t_lat  = t_scaled * lat[row_idx]
     t_elev = t_scaled * elev[row_idx]
     t_temp = t_scaled * temp_scaled[row_idx, time_idx]
 
     # ============================================================
     # X_eta
     # ============================================================
-    eta_dim = K_total*S + 3
+    eta_dim = K_total*S + 5
 
     rows_e, cols_e, vals_e = [], [], []
 
     for i in range(N):
         s = row_idx[i]
 
-        # >>> CHANGED
         for k in range(K_base):
-            xval = cov5[i,k]
+            xval = cov4[i,k]
             rows_e += [i,i]
             cols_e += [(2*k)*S+s, (2*k+1)*S+s]
             vals_e += [xval,xval]
 
-        rows_e += [i,i,i]
-        cols_e += [K_total*S, K_total*S+1, K_total*S+2]
-        vals_e += [t_lat[i],t_elev[i],t_temp[i]]
+        rows_e += [i,i,i,i,i]
+        cols_e += [
+            K_total*S,
+            K_total*S+1,
+            K_total*S+2,
+            K_total*S+3,
+            K_total*S+4
+        ]
+        vals_e += [
+            t_lon_NA[i],
+            t_lon_EUAS[i],
+            t_lat[i],
+            t_elev[i],
+            t_temp[i]
+        ]
 
     X_eta_base = coo_matrix((vals_e,(rows_e,cols_e)),
                             shape=(N,eta_dim)).tocsr()
 
-    # ===== TOP1 =====
+    # ============================================================
+    # TOP1 OPT
+    # ============================================================
     rows_all, cols_all = X_eta_base.nonzero()
     sp_mask = cols_all < K_total*S
 
@@ -186,9 +216,8 @@ def build_dataset(event):
     for i in range(N):
         w = week_idx[i]
 
-        # >>> CHANGED
         for k in range(K_base):
-            xval = cov5[i,k]
+            xval = cov4[i,k]
             rows_t += [i,i]
             cols_t += [(2*k)*52+w, (2*k+1)*52+w]
             vals_t += [xval,xval]
@@ -196,9 +225,6 @@ def build_dataset(event):
     X_tau_base = coo_matrix((vals_t,(rows_t,cols_t)),
                             shape=(N,tau_dim)).tocsr()
 
-    # ============================================================
-    # PRIOR
-    # ============================================================
     Q_blocks = []
     for k in range(K_base):
         Q_blocks.append(Q_car)
@@ -210,7 +236,7 @@ def build_dataset(event):
         format="csr"
     )
 
-    Q_factor = diags(np.ones(3)/9)
+    Q_factor = diags(np.ones(5)/9)
     Q_eta = block_diag((Q_spatial, Q_factor), format="csr")
 
     tau_prior_prec = diags(np.ones(tau_dim)/9)
@@ -222,9 +248,8 @@ def build_dataset(event):
         sp_mask, tau_indices
     )
 
-
 # ================================================================
-# MCMC (UNCHANGED)
+# MCMC
 # ================================================================
 def run_chain(chain_id, data, event):
 
@@ -277,8 +302,8 @@ def run_chain(chain_id, data, event):
 
         X_tilde_tau.data *= curr_eta[eta_indices]
 
-        gamma = curr_eta[K_total*S:K_total*S+3]
-        X_factor = X_eta_base[:, K_total*S:K_total*S+3]
+        gamma = curr_eta[K_total*S:K_total*S+5]
+        X_factor = X_eta_base[:, K_total*S:K_total*S+5]
 
         c = X_factor @ gamma
         residual = kappa - omega*c
@@ -303,11 +328,10 @@ def run_chain(chain_id, data, event):
             if save_idx == tot_save:
                 break
 
-    with open(BASE_DIR / f"{event}_weekly_covt2_chain{chain_id}.pkl","wb") as f:
+    with open(BASE_DIR / f"{event}_weekly_cov+lon_chain{chain_id}.pkl","wb") as f:
         pickle.dump({"eta":all_eta,"tau":all_tau},f)
 
     return chain_id
-
 
 # ================================================================
 # MAIN
@@ -320,12 +344,12 @@ def main():
 
         print(f"Running {event} ...")
 
-        Parallel(n_jobs=n_chains, backend="loky", batch_size=1)(
-            delayed(run_chain)(i, data, event) for i in range(n_chains)
+        Parallel(n_jobs=CHAIN_END-CHAIN_START, backend="loky", batch_size=1)(
+            delayed(run_chain)(i, data, event) 
+            for i in range(CHAIN_START, CHAIN_END)
         )
 
     print("All done.")
-
 
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn", force=True)

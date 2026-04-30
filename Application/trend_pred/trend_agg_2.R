@@ -358,3 +358,19 @@ p_lon <- ggplot(df_scatter, aes(x = lon, y = trend_bymp)) +
 p_lon
 
 
+df_scatter$group <- ifelse(df_scatter$lon < -0.6, "North America", "Asia and Europe")
+
+p_lon2 <- ggplot(df_scatter, aes(x = lon, y = trend_bymp, color = group)) +
+  geom_point(alpha = 0.4, size = 1.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Trend vs Longitude (BYM+)",
+    x = "Longitude (scaled)",
+    y = "Trend Estimate",
+    color = "Area"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+
+p_lon2

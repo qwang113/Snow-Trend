@@ -285,3 +285,94 @@ plot_model <- function(arr){
 
 p_cov <- plot_model(bym_cov_year)
 p_cov
+
+
+
+# =====================================================
+# ADD: POISSON REGRESSION + TRACE OVERLAY
+# =====================================================
+
+add_poisson_trace <- function(arr){
+  
+  plots <- list()
+  
+  for(i in 1:SS){
+    
+    pred <- arr[,i,]   # M x Years
+    
+    df <- as.data.frame(t(pred))
+    df$year <- 1972:(1972+ncol(pred)-1)
+    
+    summary <- df |>
+      pivot_longer(-year) |>
+      group_by(year) |>
+      summarise(mean=mean(value),
+                low=quantile(value,0.025),
+                up=quantile(value,0.975),
+                .groups="drop")
+    
+    # truth
+    truth <- sapply(1:nrow(summary), function(j){
+      idx <- ((j-1)*52+1):(j*52)
+      sum(y[ids[i], idx])
+    })
+    
+    summary$truth <- truth
+    
+    # ============================
+    # POISSON REGRESSION
+    # ============================
+    df_poisson <- data.frame(
+      year_idx = 1:length(truth),
+      y = truth
+    )
+    
+    fit <- glm(y ~ year_idx, family="poisson", data=df_poisson)
+    
+    year_idx <- 1:ncol(pred)
+    
+    lambda_pred <- exp(
+      coef(fit)[1] + coef(fit)[2] * year_idx
+    )
+    
+    # ============================
+    # BUILD TRACE DF
+    # ============================
+    trace_df <- data.frame(
+      year = 1972:(1972+length(lambda_pred)-1),
+      lambda = lambda_pred
+    )
+    
+    # ============================
+    # PLOT
+    # ============================
+    p <- ggplot(summary, aes(year)) +
+      geom_ribbon(aes(ymin=low,ymax=up), fill="blue", alpha=0.2) +
+      geom_line(aes(y=mean), color="blue", size=1) +
+      
+
+      geom_line(aes(y=truth), color="red", size=0.5) +
+      
+      geom_line(data=trace_df,
+                aes(y=lambda),
+                color="#FF2D95",
+                linetype="dashed",
+                size=1) +
+      
+      ggtitle(names(ids)[i]) +
+      theme_minimal() + 
+      theme(plot.title = element_text(hjust = 0.5))
+    
+    plots[[i]] <- p
+  }
+  
+  wrap_plots(plots)
+}
+
+# =====================================================
+# RUN NEW PLOT
+# =====================================================
+p_cov_trace <- add_poisson_trace(bym_cov_year)
+p_cov_trace
+
+
