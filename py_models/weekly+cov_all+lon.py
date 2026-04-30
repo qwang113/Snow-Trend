@@ -1,6 +1,7 @@
 # ================================================================
 # WEEKLY BYM + FACTOR (Double PolyGamma)
 # + NA vs Non-NA longitude (separate scaling)
+# FIXED VERSION (tau_indices alignment bug fixed)
 # ================================================================
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -28,8 +29,9 @@ tot_save = 5000
 total_iters = burn + thin * tot_save
 n_chains = 10
 period = 52
+
 CHAIN_START = 0
-CHAIN_END   = 4 
+CHAIN_END   = 4
 
 # ================================================================
 # LOAD DATA
@@ -102,12 +104,9 @@ def build_dataset(event):
     # ============================================================
     # covariates
     # ============================================================
-
     lat = (coords[:,1] - coords[:,1].mean()) / coords[:,1].std()
 
-    # -------- longitude split --------
     lon_raw = coords[:,0]
-
     region = np.zeros(S, dtype=int)
     region[lon_raw < -30] = 0
     region[lon_raw >= -30] = 1
@@ -128,7 +127,6 @@ def build_dataset(event):
         max(lon_raw[mask_euas].std(), 1e-6)
     )
 
-    # -------- elevation --------
     no_nbs = np.array([
         57,170,236,269,343,685,946,947,989,
         1037,1084,1090,1109,1118,1127,1176,1203
@@ -145,15 +143,12 @@ def build_dataset(event):
     elev_all[no_nbs] = nnbs_elev
     elev = (elev_all - elev_all.mean()) / elev_all.std()
 
-    # -------- temperature --------
     snow_temp = pyreadr.read_r(BASE_DIR/"snow_temp_full.Rda")
     temp = list(snow_temp.values())[0].iloc[:,2:].to_numpy()
     temp_scaled = (temp - temp.mean()) / temp.std()
 
-    # -------- interactions --------
     t_lon_NA   = t_scaled * lon_na[row_idx]
     t_lon_EUAS = t_scaled * lon_euas[row_idx]
-
     t_lat  = t_scaled * lat[row_idx]
     t_elev = t_scaled * elev[row_idx]
     t_temp = t_scaled * temp_scaled[row_idx, time_idx]
@@ -175,36 +170,52 @@ def build_dataset(event):
             vals_e += [xval,xval]
 
         rows_e += [i,i,i,i,i]
-        cols_e += [
-            K_total*S,
-            K_total*S+1,
-            K_total*S+2,
-            K_total*S+3,
-            K_total*S+4
-        ]
-        vals_e += [
-            t_lon_NA[i],
-            t_lon_EUAS[i],
-            t_lat[i],
-            t_elev[i],
-            t_temp[i]
-        ]
+        cols_e += [K_total*S, K_total*S+1, K_total*S+2, K_total*S+3, K_total*S+4]
+        vals_e += [t_lon_NA[i], t_lon_EUAS[i], t_lat[i], t_elev[i], t_temp[i]]
 
-    X_eta_base = coo_matrix((vals_e,(rows_e,cols_e)),
-                            shape=(N,eta_dim)).tocsr()
+    coo = coo_matrix((vals_e,(rows_e,cols_e)), shape=(N,eta_dim))
+    print("\n===== COO DEBUG CHECK =====")
 
-    # ============================================================
-    # TOP1 OPT
-    # ============================================================
-    rows_all, cols_all = X_eta_base.nonzero()
-    sp_mask = cols_all < K_total*S
+    idx_check = np.random.choice(len(coo.data), size=20, replace=False)
 
-    rows_sp = rows_all[sp_mask]
-    cols_sp = cols_all[sp_mask]
+    for k in idx_check:
+        r = coo.row[k]
+        c = coo.col[k]
+        v = coo.data[k]
 
-    j = cols_sp // S
-    w = week_idx[rows_sp]
+        is_spatial = (c < K_total*S)
+
+        print(f"\n[k={k}] row={r}, col={c}, val={v:.4f}, spatial={is_spatial}")
+
+        if is_spatial:
+            j = c // S
+            w = week_idx[r]
+            tau = j*52 + w
+
+            print(f"   → j={j}, week={w}, tau_idx={tau}")
+
+            base_k = j // 2
+            print(f"   → base_k={base_k}, cov4={cov4[r, base_k]:.4f}")
+
+        else:
+            gamma_idx = c - K_total*S
+            print(f"   → gamma_idx={gamma_idx}")
+
+            expected = [
+                t_lon_NA[r],
+                t_lon_EUAS[r],
+                t_lat[r],
+                t_elev[r],
+                t_temp[r]
+            ][gamma_idx]
+
+            print(f"   → expected={expected:.4f}")
+    sp_mask = coo.col < K_total*S
+    j = coo.col[sp_mask] // S
+    w = week_idx[coo.row[sp_mask]]
     tau_indices = j*52 + w
+
+    X_eta_base = coo.tocsr()
 
     # ============================================================
     # X_tau
@@ -215,15 +226,13 @@ def build_dataset(event):
 
     for i in range(N):
         w = week_idx[i]
-
         for k in range(K_base):
             xval = cov4[i,k]
             rows_t += [i,i]
             cols_t += [(2*k)*52+w, (2*k+1)*52+w]
             vals_t += [xval,xval]
 
-    X_tau_base = coo_matrix((vals_t,(rows_t,cols_t)),
-                            shape=(N,tau_dim)).tocsr()
+    X_tau_base = coo_matrix((vals_t,(rows_t,cols_t)), shape=(N,tau_dim)).tocsr()
 
     Q_blocks = []
     for k in range(K_base):
@@ -238,7 +247,6 @@ def build_dataset(event):
 
     Q_factor = diags(np.ones(5)/9)
     Q_eta = block_diag((Q_spatial, Q_factor), format="csr")
-
     tau_prior_prec = diags(np.ones(tau_dim)/9)
 
     return (
@@ -270,9 +278,13 @@ def run_chain(chain_id, data, event):
 
     save_idx = 0
 
-    for it in tqdm(range(total_iters),
-                   desc=f"{event}-Chain {chain_id}",
-                   position=chain_id):
+    for it in tqdm(
+        range(total_iters),
+        desc=f"{event}-Chain {chain_id}",
+        position=chain_id,
+        leave=True,
+        dynamic_ncols=False
+    ):
 
         X_tilde_eta = X_eta_base.copy()
         X_tilde_eta.data[sp_mask] *= curr_tau[tau_indices]
@@ -337,15 +349,18 @@ def run_chain(chain_id, data, event):
 # MAIN
 # ================================================================
 def main():
-
     for event in ["p01", "p10"]:
         print(f"\nBuilding dataset for {event} ...")
         data = build_dataset(event)
 
         print(f"Running {event} ...")
 
-        Parallel(n_jobs=CHAIN_END-CHAIN_START, backend="loky", batch_size=1)(
-            delayed(run_chain)(i, data, event) 
+        Parallel(
+            n_jobs=CHAIN_END-CHAIN_START,
+            backend="threading", 
+            batch_size=1
+        )(
+            delayed(run_chain)(i, data, event)
             for i in range(CHAIN_START, CHAIN_END)
         )
 
