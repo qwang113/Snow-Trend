@@ -58,7 +58,7 @@ np <- import("numpy", convert = FALSE)
 
 ind  <- np$load("trend_ind_summary.npz", allow_pickle = TRUE)
 bym  <- np$load("trend_bym_summary.npz", allow_pickle = TRUE)
-bymp <- np$load("trend_bymp_summary.npz", allow_pickle = TRUE)
+bymp <- np$load("trend_bymp+lon_summary.npz", allow_pickle = TRUE)
 
 to_r_vec <- function(x) {
   as.numeric(py_to_r(x$tolist()))

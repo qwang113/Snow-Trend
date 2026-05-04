@@ -33,7 +33,7 @@ cat("FULL S =", S, "\n")
 # ============================================================
 # 2️⃣ Load BYM weekly + cov (strict version, NPZ)
 # ============================================================
-bymp_data <- np$load("D:/77/research/temp/snow/trend_weekly_bym+cov.npz", allow_pickle=TRUE)
+bymp_data <- np$load("D:/77/research/temp/snow/trend_weekly_bym+cov+lon.npz", allow_pickle=TRUE)
 
 weekly_ini_BMP   <- bymp_data$f[["weekly_ini"]]
 weekly_final_BMP <- bymp_data$f[["weekly_final"]]
@@ -145,7 +145,10 @@ for(i in 2:52){
     
     theme(
       legend.position="bottom",
-      plot.title=element_text(hjust=0.5)
+      plot.title=element_text(hjust=0.5),
+      axis.title = element_blank(),
+      axis.text  = element_blank(),
+      axis.ticks = element_blank()
     )
   
   ggsave(paste0("plot_",i,".png"),
@@ -192,7 +195,10 @@ ggplot(df_plot, aes(x = week, y = n_pos)) +
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5)
+    plot.title = element_text(hjust = 0.5),
+    axis.title = element_blank(),
+    axis.text  = element_blank(),
+    axis.ticks = element_blank()
   )
 
 
@@ -213,7 +219,7 @@ p1 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=q_global,          # 🔥 用quantile
+    limits=q_global,
     oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
@@ -230,7 +236,10 @@ p1 <- ggplot() +
            fontface = "bold") +
   theme(
     legend.position="bottom",
-    plot.title=element_text(hjust=0.5)
+    plot.title=element_text(hjust=0.5),
+    axis.title = element_blank(),
+    axis.text  = element_blank(),
+    axis.ticks = element_blank()
   )
 
 
@@ -267,7 +276,10 @@ p2 <- ggplot() +
            fontface = "bold") +
   theme(
     legend.position="bottom",
-    plot.title=element_text(hjust=0.5)
+    plot.title=element_text(hjust=0.5),
+    axis.title = element_blank(),
+    axis.text  = element_blank(),
+    axis.ticks = element_blank()
   )
 
 cowplot::plot_grid(p1,p2)
@@ -310,7 +322,10 @@ p1 <- ggplot() +
            fontface = "bold") +
   theme(
     legend.position="bottom",
-    plot.title=element_text(hjust=0.5)
+    plot.title=element_text(hjust=0.5),
+    axis.title = element_blank(),
+    axis.text  = element_blank(),
+    axis.ticks = element_blank()
   )
 
 
@@ -347,7 +362,10 @@ p2 <- ggplot() +
            fontface = "bold") +
   theme(
     legend.position="bottom",
-    plot.title=element_text(hjust=0.5)
+    plot.title=element_text(hjust=0.5),
+    axis.title = element_blank(),
+    axis.text  = element_blank(),
+    axis.ticks = element_blank()
   )
 
 cowplot::plot_grid(p1,p2)

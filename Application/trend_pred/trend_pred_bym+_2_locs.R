@@ -36,7 +36,22 @@ cat("Using S =", S, "\n")
 
 lat <- scale(coords[,2])[,1]
 
-# elevation
+# ===== NEW: longitude split =====
+lon_raw <- coords[,1]
+
+region <- rep(0, S)
+region[lon_raw >= -30] <- 1
+
+lon_na <- rep(0, S)
+lon_euas <- rep(0, S)
+
+mask_na <- (region == 0)
+mask_euas <- (region == 1)
+
+lon_na[mask_na] <- scale(lon_raw[mask_na])[,1]
+lon_euas[mask_euas] <- scale(lon_raw[mask_euas])[,1]
+
+# elevation（完全不动）
 elev_raw <- read.csv("curr_elev.csv")[,4]
 nnbs_df <- read.csv("nnbs_elev.csv", sep="\t", row.names=NULL)
 nnbs_elev <- nnbs_df[,3]
@@ -55,7 +70,7 @@ elev_all[no_nbs] <- nnbs_elev
 
 elev <- scale(elev_all)[,1]
 
-# temp
+# temperature（不动）
 load("snow_temp_full.Rda")
 snow_temp <- sce_temp
 temp <- as.matrix(snow_temp[, -c(1,2)])
@@ -93,6 +108,7 @@ np <- import("numpy")
 # =====================================================
 # LOAD NPZ
 # =====================================================
+
 load_bym_cov <- function(prefix){
   
   eta_list <- list()
@@ -102,15 +118,17 @@ load_bym_cov <- function(prefix){
     
     cat("Loading chain", c, "\n")
     
-    d <- np$load(file.path(BASE_DIR, sprintf("%s_chain%d.npz", prefix, c)))
+    eta <- as.matrix(readRDS(file.path(BASE_DIR,
+                                       sprintf("%s_eta_chain%d.rds", prefix, c))))
     
-    eta <- py_to_r(d[["eta"]])
-    tau <- py_to_r(d[["tau"]])
+    tau <- as.matrix(readRDS(file.path(BASE_DIR,
+                                       sprintf("%s_tau_chain%d.rds", prefix, c))))
     
-    eta <- eta[, seq(1, ncol(eta), by=thin), drop=FALSE]
-    tau <- tau[, seq(1, ncol(tau), by=thin), drop=FALSE]
+    storage.mode(eta) <- "numeric"
+    storage.mode(tau) <- "numeric"
     
-    cat("  eta:", dim(eta), " tau:", dim(tau), "\n")
+    cat("dim eta:", dim(eta), "\n")
+    cat("dim tau:", dim(tau), "\n")
     
     eta_list[[length(eta_list)+1]] <- eta
     tau_list[[length(tau_list)+1]] <- tau
@@ -120,10 +138,10 @@ load_bym_cov <- function(prefix){
 }
 
 # =====================================================
-# LOAD POSTERIOR
+# LOAD POSTERIOR（已是longitude模型）
 # =====================================================
-bym01 <- load_bym_cov("p01_weekly_cov")
-bym10 <- load_bym_cov("p10_weekly_cov")
+bym01 <- load_bym_cov("p01_weekly_cov+lon")
+bym10 <- load_bym_cov("p10_weekly_cov+lon")
 
 # =====================================================
 # SIMULATION（核心）
@@ -141,8 +159,6 @@ compute_bym_cov <- function(eta01_list, tau01_list,
   
   out <- array(NA, c(M, SS, TT-1))
   
-  cat("\n===== START =====\n")
-  
   pb <- txtProgressBar(min = 0, max = M, style = 3)
   
   for(m in 1:M){
@@ -158,15 +174,17 @@ compute_bym_cov <- function(eta01_list, tau01_list,
         
         w <- ((t-1) %% period) + 1
         
-        cov4 <- c(1,
-                  cos(2*pi*t/period),
-                  sin(2*pi*t/period),
-                  t_scaled[t])
+        cov4 <- c(
+          1,
+          cos(2*pi*t/period),
+          sin(2*pi*t/period),
+          t_scaled[t]
+        )
         
         phi01 <- 0
         phi10 <- 0
         
-        # BYM part
+        # BYM
         for(k in 1:8){
           phi01 <- phi01 +
             eta01_all[(k-1)*S + s, m] *
@@ -179,25 +197,28 @@ compute_bym_cov <- function(eta01_list, tau01_list,
             cov4[(k-1)%/%2 + 1]
         }
         
-        # covariates
+        # ===== NEW γ=5 =====
         phi01 <- phi01 +
           t_scaled[t] * (
-            eta01_all[8*S + 1, m] * lat[s] +
-              eta01_all[8*S + 2, m] * elev[s] +
-              eta01_all[8*S + 3, m] * temp[s,t]
+            eta01_all[8*S + 1, m] * lon_na[s] +
+              eta01_all[8*S + 2, m] * lon_euas[s] +
+              eta01_all[8*S + 3, m] * lat[s] +
+              eta01_all[8*S + 4, m] * elev[s] +
+              eta01_all[8*S + 5, m] * temp[s,t]
           )
         
         phi10 <- phi10 +
           t_scaled[t] * (
-            eta10_all[8*S + 1, m] * lat[s] +
-              eta10_all[8*S + 2, m] * elev[s] +
-              eta10_all[8*S + 3, m] * temp[s,t]
+            eta10_all[8*S + 1, m] * lon_na[s] +
+              eta10_all[8*S + 2, m] * lon_euas[s] +
+              eta10_all[8*S + 3, m] * lat[s] +
+              eta10_all[8*S + 4, m] * elev[s] +
+              eta10_all[8*S + 5, m] * temp[s,t]
           )
         
         p01 <- inv_logit(phi01)
         p10 <- inv_logit(phi10)
         
-        # Markov expectation
         p <- (1 - y_curr) * p01 + y_curr * (1 - p10)
         
         out[m,i,t] <- p
@@ -207,8 +228,6 @@ compute_bym_cov <- function(eta01_list, tau01_list,
   }
   
   close(pb)
-  cat("\n===== DONE =====\n")
-  
   out
 }
 
@@ -272,7 +291,7 @@ plot_model <- function(arr){
       geom_line(aes(y=mean), color="blue") +
       geom_line(aes(y=truth), color="red") +
       ggtitle(names(ids)[i]) +
-      theme_minimal() + 
+      theme_minimal() +
       theme(
         plot.title = element_text(hjust = 0.5)
       )
@@ -285,94 +304,4 @@ plot_model <- function(arr){
 
 p_cov <- plot_model(bym_cov_year)
 p_cov
-
-
-
-# =====================================================
-# ADD: POISSON REGRESSION + TRACE OVERLAY
-# =====================================================
-
-add_poisson_trace <- function(arr){
-  
-  plots <- list()
-  
-  for(i in 1:SS){
-    
-    pred <- arr[,i,]   # M x Years
-    
-    df <- as.data.frame(t(pred))
-    df$year <- 1972:(1972+ncol(pred)-1)
-    
-    summary <- df |>
-      pivot_longer(-year) |>
-      group_by(year) |>
-      summarise(mean=mean(value),
-                low=quantile(value,0.025),
-                up=quantile(value,0.975),
-                .groups="drop")
-    
-    # truth
-    truth <- sapply(1:nrow(summary), function(j){
-      idx <- ((j-1)*52+1):(j*52)
-      sum(y[ids[i], idx])
-    })
-    
-    summary$truth <- truth
-    
-    # ============================
-    # POISSON REGRESSION
-    # ============================
-    df_poisson <- data.frame(
-      year_idx = 1:length(truth),
-      y = truth
-    )
-    
-    fit <- glm(y ~ year_idx, family="poisson", data=df_poisson)
-    
-    year_idx <- 1:ncol(pred)
-    
-    lambda_pred <- exp(
-      coef(fit)[1] + coef(fit)[2] * year_idx
-    )
-    
-    # ============================
-    # BUILD TRACE DF
-    # ============================
-    trace_df <- data.frame(
-      year = 1972:(1972+length(lambda_pred)-1),
-      lambda = lambda_pred
-    )
-    
-    # ============================
-    # PLOT
-    # ============================
-    p <- ggplot(summary, aes(year)) +
-      geom_ribbon(aes(ymin=low,ymax=up), fill="blue", alpha=0.2) +
-      geom_line(aes(y=mean), color="blue", size=1) +
-      
-
-      geom_line(aes(y=truth), color="red", size=0.5) +
-      
-      geom_line(data=trace_df,
-                aes(y=lambda),
-                color="#FF2D95",
-                linetype="dashed",
-                size=1) +
-      
-      ggtitle(names(ids)[i]) +
-      theme_minimal() + 
-      theme(plot.title = element_text(hjust = 0.5))
-    
-    plots[[i]] <- p
-  }
-  
-  wrap_plots(plots)
-}
-
-# =====================================================
-# RUN NEW PLOT
-# =====================================================
-p_cov_trace <- add_poisson_trace(bym_cov_year)
-p_cov_trace
-
 

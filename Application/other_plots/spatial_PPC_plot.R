@@ -8,14 +8,14 @@ df <- df %>%
   mutate(
     model = recode(model,
                    "BYM weekly" = "BYM",
-                   "BYM weekly + cov" = "BYM+"),
+                   "BYM weekly + cov + lon" = "BYM+"),
     extreme = (p_value < 0.05 | p_value > 0.95)
   )
 
 colors <- c(
-  "IID" = "#0072B2",   # 蓝（稳）
-  "BYM" = "#E69F00",   # 橙
-  "BYM+" = "#009E73"   # 绿
+  "IID" = "#0072B2",
+  "BYM" = "#E69F00", 
+  "BYM+" = "#009E73"
 )
 
 linetypes <- c(

@@ -349,7 +349,7 @@ def run_chain(chain_id, data, event):
 # MAIN
 # ================================================================
 def main():
-    for event in ["p01", "p10"]:
+    for event in ["p10"]:
         print(f"\nBuilding dataset for {event} ...")
         data = build_dataset(event)
 
