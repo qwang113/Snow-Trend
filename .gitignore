@@ -5,3 +5,7 @@
 .Rda
 .png
 .RDataTmp
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.env

@@ -51,7 +51,7 @@ mask_euas <- (region == 1)
 lon_na[mask_na] <- scale(lon_raw[mask_na])[,1]
 lon_euas[mask_euas] <- scale(lon_raw[mask_euas])[,1]
 
-# elevation（完全不动）
+# elevation
 elev_raw <- read.csv("curr_elev.csv")[,4]
 nnbs_df <- read.csv("nnbs_elev.csv", sep="\t", row.names=NULL)
 nnbs_elev <- nnbs_df[,3]
@@ -70,7 +70,7 @@ elev_all[no_nbs] <- nnbs_elev
 
 elev <- scale(elev_all)[,1]
 
-# temperature（不动）
+# temperature
 load("snow_temp_full.Rda")
 snow_temp <- sce_temp
 temp <- as.matrix(snow_temp[, -c(1,2)])
@@ -88,7 +88,11 @@ target_points <- list(
   Novosibirsk = c(82.9204, 55.0302),
   Dandong     = c(124.3547, 40.0005),
   Winnipeg    = c(-97.1384, 49.8951),
-  Minneapolis = c(-93.2650, 44.9778)
+  Minneapolis = c(-93.2650, 44.9778),
+  Hokkaido    = c(141.3545, 43.0618),
+  Quebec      = c(-71.2080, 46.8139),
+  Chamonix    = c(6.8694, 45.9237),
+  Alaska      = c(-147.7164, 64.8378)
 )
 
 nearest_indices <- sapply(target_points, function(loc){
@@ -126,6 +130,9 @@ load_bym_cov <- function(prefix){
     
     storage.mode(eta) <- "numeric"
     storage.mode(tau) <- "numeric"
+
+    eta <- eta[, seq(1, ncol(eta), by = thin), drop = FALSE]
+    tau <- tau[, seq(1, ncol(tau), by = thin), drop = FALSE]
     
     cat("dim eta:", dim(eta), "\n")
     cat("dim tau:", dim(tau), "\n")

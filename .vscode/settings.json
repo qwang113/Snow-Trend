@@ -1,3 +1,7 @@
 {
-    "r.lsp.promptToInstall": false
+    "r.lsp.promptToInstall": false,
+    "python.defaultInterpreterPath": "C:\\Users\\10616\\anaconda3\\envs\\snow-trend\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.envFile": "${workspaceFolder}\\.env",
+    "jupyter.notebookFileRoot": "${workspaceFolder}"
 }
