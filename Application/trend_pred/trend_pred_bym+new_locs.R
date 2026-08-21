@@ -27,7 +27,7 @@ cat("Using S =", S, "\n")
 # COVARIATES
 lat <- scale(coords[,2])[,1]
 
-# ===== Longitude split =====
+# Longitude split
 lon_raw <- coords[,1]
 
 region <- rep(0, S)
@@ -73,14 +73,10 @@ t_scaled <- scale(1:TT)[,1]
 inv_logit <- function(x) 1/(1+exp(-x))
 # TARGET LOCATIONS
 target_points <- list(
-  Novosibirsk = c(82.9204, 55.0302),
-  Dandong     = c(124.3547, 40.0005),
-  Winnipeg    = c(-97.1384, 49.8951),
-  Minneapolis = c(-93.2650, 44.9778),
-  Sapporo     = c(141.3545, 43.0618),
+  Sapporo       = c(141.3545, 43.0618),
   `Quebec City` = c(-71.2080, 46.8139),
   Innsbruck     = c(11.4041, 47.2692),
-  Fairbanks   = c(-147.7164, 64.8378)
+  Fairbanks     = c(-147.7164, 64.8378)
 )
 
 nearest_indices <- sapply(target_points, function(loc){
@@ -127,7 +123,7 @@ load_bym_cov <- function(prefix){
 # Posterior samples for the longitude model
 bym01 <- load_bym_cov("p01_weekly_cov+lon")
 bym10 <- load_bym_cov("p10_weekly_cov+lon")
-# SIMULATION (core calculation)
+# Simulation
 compute_bym_cov <- function(eta01_list, tau01_list,
                             eta10_list, tau10_list){
 
@@ -232,31 +228,34 @@ agg_year <- function(arr){
 }
 
 bym_cov_year <- agg_year(bym_cov_pred)
-# BYM+ estimates, observed counts, and Poisson trend
-plot_location_set <- function(arr, location_indices){
+# PLOT: BYM+ PREDICTION, OBSERVED COUNTS, AND POISSON TREND
+plot_model <- function(arr) {
 
-  plots <- vector("list", length(location_indices))
+  plots <- vector("list", SS)
 
-  for(j in seq_along(location_indices)){
+  for (i in seq_len(SS)) {
 
-    i <- location_indices[j]
+    # Posterior samples × years
     pred <- arr[, i, ]
 
     n_years <- ncol(pred)
     years <- 1972 + seq_len(n_years) - 1
 
+    # BYM+ posterior summaries
     summary_df <- data.frame(
       year = years,
       mean = colMeans(pred),
-      low = apply(pred, 2, quantile, probs=0.025),
-      up = apply(pred, 2, quantile, probs=0.975)
+      low  = apply(pred, 2, quantile, probs = 0.025),
+      up   = apply(pred, 2, quantile, probs = 0.975)
     )
 
-    summary_df$truth <- sapply(seq_len(n_years), function(k){
-      idx <- ((k-1)*52+1):(k*52)
+    # Observed annual number of snowy weeks
+    summary_df$truth <- sapply(seq_len(n_years), function(j) {
+      idx <- ((j - 1) * 52 + 1):(j * 52)
       sum(y[ids[i], idx])
     })
 
+    # Poisson regression fitted to observed annual counts
     poisson_df <- data.frame(
       year = years,
       year_idx = seq_len(n_years),
@@ -265,60 +264,65 @@ plot_location_set <- function(arr, location_indices){
 
     poisson_fit <- glm(
       observed ~ year_idx,
-      family=poisson(link="log"),
-      data=poisson_df
+      family = poisson(link = "log"),
+      data = poisson_df
     )
 
     poisson_df$lambda <- predict(
       poisson_fit,
-      newdata=poisson_df,
-      type="response"
+      newdata = poisson_df,
+      type = "response"
     )
 
-    plots[[j]] <- ggplot(summary_df, aes(x=year)) +
+    # Plot
+    plots[[i]] <- ggplot(summary_df, aes(x = year)) +
+
+      # 95% credible interval for the BYM+ annual mean
       geom_ribbon(
-        aes(ymin=low, ymax=up),
-        fill="blue",
-        alpha=0.2
+        aes(ymin = low, ymax = up),
+        fill = "blue",
+        alpha = 0.20
       ) +
+
+      # Estimated annual mean from the BYM+ model
       geom_line(
-        aes(y=mean),
-        color="blue",
-        linewidth=1
+        aes(y = mean),
+        color = "blue",
+        linewidth = 1
       ) +
+
+      # Observed annual counts
       geom_line(
-        aes(y=truth),
-        color="red",
-        linewidth=0.5
+        aes(y = truth),
+        color = "red",
+        linewidth = 0.5
       ) +
+
+      # Poisson regression trend fitted to observed counts
       geom_line(
-        data=poisson_df,
-        aes(x=year, y=lambda),
-        inherit.aes=FALSE,
-        color="black",
-        linetype="dashed",
-        linewidth=0.8
+        data = poisson_df,
+        aes(x = year, y = lambda),
+        inherit.aes = FALSE,
+        color = "black",
+        linetype = "dashed",
+        linewidth = 0.8
       ) +
+
       labs(
-        title=names(ids)[i],
-        x="year",
-        y="mean"
+        title = names(ids)[i],
+        x = "year",
+        y = "mean"
       ) +
+
       theme_minimal() +
       theme(
-        plot.title=element_text(hjust=0.5),
-        legend.position="none"
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "none"
       )
   }
 
-  wrap_plots(plots, ncol=2)
+  wrap_plots(plots, ncol = 2)
 }
-
-# Original four locations
-p_original_locs <- plot_location_set(bym_cov_year, 1:4)
-
-# Four additional locations
-p_new_locs <- plot_location_set(bym_cov_year, 5:8)
-
-print(p_original_locs)
-print(p_new_locs)
+# GENERATE FIGURE
+p_cov_trace <- plot_model(bym_cov_year)
+p_cov_trace
