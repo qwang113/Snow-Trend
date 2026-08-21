@@ -1,7 +1,5 @@
 {
     "r.lsp.promptToInstall": false,
-    "r.rterm.windows": "C:\\Program Files\\R\\R-4.6.1\\bin\\x64\\R.exe",
-    "python.defaultInterpreterPath": "C:\\Users\\10616\\miniconda3\\envs\\snow-trend\\python.exe",
     "python.terminal.activateEnvironment": true,
     "python.envFile": "${workspaceFolder}\\.env",
     "jupyter.notebookFileRoot": "${workspaceFolder}"

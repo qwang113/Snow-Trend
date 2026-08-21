@@ -4,11 +4,9 @@ library(reticulate)
 library(ggplot2)
 library(patchwork)
 library(tidyr)
-
-# =====================================================
-# CONFIG
-# =====================================================
-BASE_DIR <- "D:/77/Research/temp/snow"
+# Paths and settings
+# Set this path to the local data and results directory.
+BASE_DIR <- "path/to/snow/data-and-results"
 
 period <- 52
 thin2 <- 15
@@ -19,10 +17,7 @@ year <- 20
 
 times <- (year * 52 + weeks - 1)
 chains <- 0:9
-
-# =====================================================
-# LOAD DATA
-# =====================================================
+# Data
 snow <- readRDS("snow_cleaned_full.Rda")
 
 coords <- as.matrix(snow[,1:2])
@@ -32,11 +27,7 @@ S <- nrow(y)
 TT <- ncol(y)
 
 cat("Using FULL S =", S, "TT =", TT, "\n")
-
-# =====================================================
 # COVARIATES
-# =====================================================
-
 lat <- scale(coords[,2])[,1]
 
 # longitude split
@@ -79,10 +70,7 @@ temp_scaled <- scale(temp_full)
 # time
 t_full <- 1:TT
 t_scaled_full <- scale(t_full)[,1]
-
-# =====================================================
 # LOAD CHAINS
-# =====================================================
 np <- import("numpy")
 
 load_bym <- function(prefix){
@@ -121,11 +109,7 @@ load_ind <- function(prefix){
   
   eta_list
 }
-
-# =====================================================
 # COMPUTE FUNCTIONS
-# =====================================================
-
 compute_p_ind <- function(eta01_list, eta10_list){
   
   K <- 4
@@ -260,10 +244,7 @@ compute_p_bym <- function(eta01_list, tau01_list,
   
   results
 }
-
-# =====================================================
 # LOAD
-# =====================================================
 bym01_cov <- load_bym("p01_weekly_cov+lon")
 bym10_cov <- load_bym("p10_weekly_cov+lon")
 
@@ -272,10 +253,7 @@ bym10 <- load_bym("p10_weekly")
 
 ind01 <- load_ind("p01_ind_all")
 ind10 <- load_ind("p10_ind_all")
-
-# =====================================================
 # RUN
-# =====================================================
 res_cov <- compute_p_bym(bym01_cov$eta, bym01_cov$tau,
                          bym10_cov$eta, bym10_cov$tau, TRUE)
 
@@ -283,10 +261,7 @@ res_bym <- compute_p_bym(bym01$eta, bym01$tau,
                          bym10$eta, bym10$tau, FALSE)
 
 res_ind <- compute_p_ind(ind01, ind10)
-
-# =====================================================
 # PLOT 1: MCMC TRACE
-# =====================================================
 plot_all_models <- function(res_cov, res_bym, res_ind){
   
   build_df <- function(results, model_name){
@@ -338,10 +313,7 @@ plot_all_models <- function(res_cov, res_bym, res_ind){
 }
 
 plot_all_models(res_cov, res_bym, res_ind)
-
-# =====================================================
 # PLOT 2: GAMMA TRACE
-# =====================================================
 extract_gamma <- function(eta_list, label){
   out <- list()
   
@@ -381,11 +353,10 @@ ggplot(gamma_long,
   facet_grid(covariate ~ transition, scales = "free_y") +
   scale_color_discrete(
     name = "Chain",
-    labels = 1:length(unique(gamma_long$chain))   # 👈 改这里
+    labels = 1:length(unique(gamma_long$chain))   # Set chain labels here
   ) +
   theme_bw() +
   guides(color = guide_legend(nrow = 1)) +
   theme(
     legend.position = "bottom"
   )
-

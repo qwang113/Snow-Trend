@@ -1,7 +1,5 @@
-# ================================================================
-# WEEKLY BYM + FACTOR (Double PolyGamma)
-# p01 + p10 version (FULL DATA, TOP1 optimized)
-# ================================================================
+# Weekly BYM model with covariates
+# Snow-transition models fitted to the full data
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -20,7 +18,8 @@ from joblib import Parallel, delayed
 from pathlib import Path
 import multiprocessing
 
-BASE_DIR = Path(r"D:\77\Research\temp\snow")
+# Set this path to the local data and results directory.
+BASE_DIR = Path("path/to/snow/data-and-results")
 
 burn = 3000
 thin = 2
@@ -28,11 +27,7 @@ tot_save = 1000
 total_iters = burn + thin * tot_save
 n_chains = 1
 period = 52
-
-
-# ================================================================
-# LOAD DATA
-# ================================================================
+# Data
 def load_data():
     snow = pyreadr.read_r(BASE_DIR / "snow_cleaned_full.Rda")
     snow = list(snow.values())[0].reset_index(drop=True)
@@ -41,11 +36,7 @@ def load_data():
     y = snow.iloc[:, 2:].to_numpy()
 
     return coords, y
-
-
-# ================================================================
 # BUILD DATASET
-# ================================================================
 def build_dataset(event):
 
     coords, y = load_data()
@@ -110,10 +101,7 @@ def build_dataset(event):
     # >>> CHANGED
     K_base = 5
     K_total = 2 * K_base
-
-    # ============================================================
     # covariates (UNCHANGED)
-    # ============================================================
     lat = (coords[:,1] - coords[:,1].mean()) / coords[:,1].std()
 
     no_nbs = np.array([
@@ -140,10 +128,7 @@ def build_dataset(event):
     t_lat = t_scaled * lat[row_idx]
     t_elev = t_scaled * elev[row_idx]
     t_temp = t_scaled * temp_scaled[row_idx, time_idx]
-
-    # ============================================================
     # X_eta
-    # ============================================================
     eta_dim = K_total*S + 3
 
     rows_e, cols_e, vals_e = [], [], []
@@ -165,7 +150,7 @@ def build_dataset(event):
     X_eta_base = coo_matrix((vals_e,(rows_e,cols_e)),
                             shape=(N,eta_dim)).tocsr()
 
-    # ===== TOP1 =====
+    # Block indices
     rows_all, cols_all = X_eta_base.nonzero()
     sp_mask = cols_all < K_total*S
 
@@ -175,10 +160,7 @@ def build_dataset(event):
     j = cols_sp // S
     w = week_idx[rows_sp]
     tau_indices = j*52 + w
-
-    # ============================================================
     # X_tau
-    # ============================================================
     tau_dim = K_total * 52
 
     rows_t, cols_t, vals_t = [], [], []
@@ -195,10 +177,7 @@ def build_dataset(event):
 
     X_tau_base = coo_matrix((vals_t,(rows_t,cols_t)),
                             shape=(N,tau_dim)).tocsr()
-
-    # ============================================================
     # PRIOR
-    # ============================================================
     Q_blocks = []
     for k in range(K_base):
         Q_blocks.append(Q_car)
@@ -221,11 +200,7 @@ def build_dataset(event):
         eta_dim, tau_dim, K_total, S,
         sp_mask, tau_indices
     )
-
-
-# ================================================================
 # MCMC (UNCHANGED)
-# ================================================================
 def run_chain(chain_id, data, event):
 
     (
@@ -307,11 +282,7 @@ def run_chain(chain_id, data, event):
         pickle.dump({"eta":all_eta,"tau":all_tau},f)
 
     return chain_id
-
-
-# ================================================================
 # MAIN
-# ================================================================
 def main():
 
     for event in ["p01", "p10"]:

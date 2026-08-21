@@ -3,14 +3,15 @@ library(ncdf4)
 library(terra)
 library(dplyr)
 library(lubridate)
-setwd("D:/77/Research/temp/snow/")
+# Set this path to the directory containing snow_raw.nc.
+setwd("path/to/raw/snow/data")
 snow_rast <- rast("snow_raw.nc")
 snow_df <- as.data.frame(snow_rast, xy = TRUE, na.rm = FALSE)
 xy_df <- data.frame(x = snow_df$x, y = snow_df$y)
 xy_vect <- vect(xy_df, geom = c("x", "y"), crs = crs(snow_rast))
 xy_lonlat <- project(xy_vect, "EPSG:4326")
 coords <- as.data.frame(round(geom(xy_lonlat)[, c("x", "y")],4))
-coords_yisu <- readRDS(here::here("snow_cleaned.Rda"))[,1:2]
+coords_yisu <- readRDS(here::here("data", "snow_cleaned.Rda"))[,1:2]
 colnames(coords) <- c("LON", "LAT")
 yisu_mat  <- as.matrix(coords_yisu[, c("LON", "LAT")])
 coords_mat <- as.matrix(coords[, c("LON", "LAT")])
@@ -86,4 +87,4 @@ dates_cleaned <- df %>%
 
 snow_df <- snow_df[,c("LON", "LAT", as.character(dates_cleaned))]
 snow_df[,1:2] <- coords_yisu
-saveRDS(snow_df, here::here("snow_cleaned_full.Rda"))
+saveRDS(snow_df, here::here("data", "snow_cleaned_full.Rda"))

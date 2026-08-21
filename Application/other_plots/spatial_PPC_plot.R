@@ -2,7 +2,9 @@ rm(list = ls())
 library(dplyr)
 library(ggplot2)
 
-df = read.csv("D:/Snow-Trend/py_models/PPC/ppp_weekly.csv")
+# Set this path to the local Snow-Trend repository.
+REPO_DIR <- "path/to/Snow-Trend"
+df <- read.csv(file.path(REPO_DIR, "py_models", "PPC", "ppp_weekly.csv"))
 
 df <- df %>%
   mutate(

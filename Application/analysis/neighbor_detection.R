@@ -18,7 +18,7 @@ library(RColorBrewer)
 
 
 setwd(here::here())
-all_y <- readRDS("snow_cleaned.Rda")
+all_y <- readRDS(here::here("data", "snow_cleaned.Rda"))
 y <- all_y[,-c(1,2)]
 coords <- all_y[,1:2]
 
@@ -76,7 +76,7 @@ num_nbs <- rowSums(Omg) - 1
 #   coord_fixed(ratio = 1) +
 #   xlim( c(-10,10)  ) +
 #   ylim( c(-10,10)  ) +
-#   scale_color_viridis_c () +  # You can change the option to control color range
+#   scale_color_viridis_c () +
 #   labs(color = "Number of Neighbors") +  # Optional: Add color legend title
 #   theme_minimal()
 
@@ -145,6 +145,3 @@ ggplot() +
     legend.title = element_text(size = 10),
     legend.text = element_text(size = 8)
   ) 
-
-
-

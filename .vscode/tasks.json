@@ -4,7 +4,7 @@
         {
             "label": "Snow: verify Python environment",
             "type": "process",
-            "command": "C:\\Users\\10616\\miniconda3\\envs\\snow-trend\\python.exe",
+            "command": "python",
             "args": [
                 "-c",
                 "import arviz, geopandas, numpy, pandas, scipy, xarray; print('Snow Python environment OK')"
@@ -14,7 +14,7 @@
         {
             "label": "Snow: start JupyterLab",
             "type": "process",
-            "command": "C:\\Users\\10616\\miniconda3\\envs\\snow-trend\\python.exe",
+            "command": "python",
             "args": ["-m", "jupyterlab", "--notebook-dir", "${workspaceFolder}"],
             "problemMatcher": []
         }

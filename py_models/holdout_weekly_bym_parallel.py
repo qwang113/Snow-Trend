@@ -1,8 +1,5 @@
-# ================================================================
-# WEEKLY BYM (NO COVARIATES, Double PolyGamma)
-# p01 + p10 version (FULL DATA, TOP1 optimized)
-# ================================================================
-
+# Weekly BYM model without covariates
+# Snow-transition models fitted to the full data
 import numpy as np
 import geopandas as gpd
 from tqdm import tqdm
@@ -16,8 +13,9 @@ from joblib import Parallel, delayed
 from pathlib import Path
 import multiprocessing
 
-BASE_DIR = Path(r"D:\77\Research\temp\snow")
-OUTPUT_DIR = Path(r"E:\snow_results\holdout_38_14")
+# Set these paths for the local system.
+BASE_DIR = Path("path/to/snow/data")
+OUTPUT_DIR = Path("path/to/snow/results") / "holdout_38_14"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 burn = 10000
@@ -32,10 +30,7 @@ N_TEST_YEARS = 14
 TRAIN_WEEKS = N_TRAIN_YEARS * period
 TEST_WEEKS = N_TEST_YEARS * period
 PRED_THIN = 15
-
-# ================================================================
-# LOAD DATA
-# ================================================================
+# Data
 def load_data():
     snow = pyreadr.read_r(BASE_DIR / "snow_cleaned_full.Rda")
     snow = list(snow.values())[0].reset_index(drop=True)
@@ -46,10 +41,7 @@ def load_data():
     y = y_full[:, :TRAIN_WEEKS]
 
     return coords, y
-
-# ================================================================
 # BUILD DATASET (FULL)
-# ================================================================
 def build_dataset(event):
 
     coords, y = load_data()
@@ -102,10 +94,7 @@ def build_dataset(event):
 
     K_base = 4
     K_total = 8
-
-    # ============================================================
     # X_eta (NO COVARIATES)
-    # ============================================================
     eta_dim = K_total*S
 
     rows_e, cols_e, vals_e = [], [], []
@@ -122,16 +111,13 @@ def build_dataset(event):
     X_eta_base = coo_matrix((vals_e,(rows_e,cols_e)),
                             shape=(N,eta_dim)).tocsr()
 
-    # ===== TOP1 OPTIMIZATION =====
+    # Block indices
     rows_all, cols_all = X_eta_base.nonzero()
 
     j = cols_all // S
     w = week_idx[rows_all]
     tau_indices = j*52 + w
-
-    # ============================================================
     # X_tau
-    # ============================================================
     tau_dim = K_total * 52
 
     rows_t, cols_t, vals_t = [], [], []
@@ -147,10 +133,7 @@ def build_dataset(event):
 
     X_tau_base = coo_matrix((vals_t,(rows_t,cols_t)),
                             shape=(N,tau_dim)).tocsr()
-
-    # ============================================================
     # PRIOR
-    # ============================================================
     Q_blocks = []
     for k in range(K_base):
         Q_blocks.append(Q_car)
@@ -170,10 +153,7 @@ def build_dataset(event):
         eta_dim, tau_dim, K_total, S,
         tau_indices
     )
-
-# ================================================================
 # MCMC
-# ================================================================
 def run_chain(chain_id, data, event):
 
     (
@@ -221,24 +201,15 @@ def run_chain(chain_id, data, event):
     for it in tqdm(range(total_iters),
                    desc=f"{event}-Chain {chain_id}",
                    position=chain_id):
-
-        # ====================================================
         # psi
-        # ====================================================
         X_tilde_eta = X_eta_base.copy()
         tau_idx = j_idx*52 + week_idx[base_rows]
         X_tilde_eta.data *= curr_tau[tau_idx]
 
         psi = X_tilde_eta @ curr_eta
-
-        # ====================================================
         # PG
-        # ====================================================
         omega = random_polyagamma(1, psi, random_state=pg_rng)
-
-        # ====================================================
         # ETA update
-        # ====================================================
         XtOmega = X_tilde_eta.T.multiply(omega)
         post_prec_eta = (XtOmega @ X_tilde_eta + Q_eta).tocsc()
 
@@ -251,10 +222,7 @@ def run_chain(chain_id, data, event):
         z = factor_eta.apply_Pt(z)
 
         curr_eta = mu + z
-
-        # ====================================================
         # TAU update
-        # ====================================================
         X_tilde_tau = X_tau_base.copy()
 
         rows_nz, cols_nz = X_tilde_tau.nonzero()
@@ -278,10 +246,7 @@ def run_chain(chain_id, data, event):
         z = factor_tau.apply_Pt(z)
 
         curr_tau = mu + z
-
-        # ====================================================
         # SAVE
-        # ====================================================
         if it >= burn and (it-burn)%thin==0:
             all_eta[:,save_idx] = curr_eta
             all_tau[:,save_idx] = curr_tau
@@ -343,10 +308,7 @@ def predict_chain(chain_id):
 
     p_snow.flush()
     return chain_id
-
-# ================================================================
 # MAIN
-# ================================================================
 def main():
 
     for event in ["p01", "p10"]:

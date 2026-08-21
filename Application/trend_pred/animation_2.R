@@ -6,22 +6,13 @@ library(ggplot2)
 library(rnaturalearth)
 library(magick)
 library(reticulate)
-
-# ============================================================
-# 0️⃣  Use correct Python (CPD env with numpy)
-# ============================================================
+# 0.  Use correct Python (CPD env with numpy)
 use_condaenv("CPD", required = TRUE)
 np <- import("numpy", convert = TRUE)
-
-# ============================================================
-# CONFIG
-# ============================================================
+# Paths and settings
 DIST_TH <- 0.22
 aeqd_proj <- "+proj=aeqd +lat_0=90 +lon_0=-100"
-
-# ============================================================
-# 1️⃣ Load snow (FULL DATA)
-# ============================================================
+# 1. Snow data
 snow_full <- readRDS("snow_cleaned_full.Rda")
 
 coords <- as.matrix(snow_full[,1:2])
@@ -29,18 +20,14 @@ y <- as.matrix(snow_full[,-c(1,2)])
 
 S <- nrow(coords)
 cat("FULL S =", S, "\n")
-
-# ============================================================
-# 2️⃣ Load BYM weekly + cov (strict version, NPZ)
-# ============================================================
-bymp_data <- np$load("D:/77/research/temp/snow/trend_weekly_bym+cov+lon.npz", allow_pickle=TRUE)
+# 2. Load BYM weekly + cov (NPZ results)
+# Set this path to the local data and results directory.
+BASE_DIR <- "path/to/snow/data-and-results"
+bymp_data <- np$load(file.path(BASE_DIR, "trend_weekly_bym+cov+lon.npz"), allow_pickle=TRUE)
 
 weekly_ini_BMP   <- bymp_data$f[["weekly_ini"]]
 weekly_final_BMP <- bymp_data$f[["weekly_final"]]
-
-# ============================================================
-# 3️⃣ Weekly difference (final - initial)
-# ============================================================
+# 3. Weekly difference (final - initial)
 d_py <- weekly_final_BMP[,,,1] - weekly_ini_BMP[,,,1]
 
 diff_mean <- py_to_r(np$mean(d_py, axis = 0L)$tolist())
@@ -48,10 +35,7 @@ diff_sd   <- py_to_r(np$std(d_py, axis = 0L)$tolist())
 
 diff_mean <- do.call(rbind, diff_mean)
 diff_sd   <- do.call(rbind, diff_sd)
-
-# ============================================================
-# 4️⃣ Create SF object (aligned)
-# ============================================================
+# 4. Create SF object (aligned)
 trend_sf <- st_transform(
   st_as_sf(
     data.frame(LON=coords[,1],
@@ -63,10 +47,7 @@ trend_sf <- st_transform(
   ),
   crs=aeqd_proj
 )
-
-# ============================================================
-# 5️⃣ Background map + equator
-# ============================================================
+# 5. Background map + equator
 world <- ne_countries(scale="medium", returnclass="sf")
 world_north <- world[st_coordinates(st_centroid(world))[,2] > 0,]
 world_aeqd <- st_transform(world_north, crs=aeqd_proj)
@@ -79,10 +60,7 @@ equator_sf <- st_as_sf(equator_points,
                        coords=c("lon","lat"),
                        crs=4326)
 equator_aeqd <- st_transform(equator_sf, crs=aeqd_proj)
-
-# ============================================================
-# 6️⃣ Week labels (month annotation)
-# ============================================================
+# 6. Week labels (month annotation)
 wk_names <- substr(colnames(y)[1:52],6,11)
 
 month_raw <- substr(wk_names, 1, 2)
@@ -91,18 +69,11 @@ month_abbr <- month.abb[month_num]
 
 # global color range
 rg_mean <- range(diff_mean)
-
-# ============================================================
-# 7️⃣ Animated GIF (BYM weekly + cov only)
-# ============================================================
-
+# 7. Animated GIF (BYM weekly + cov only)
 all_vals <- as.numeric(diff_mean)
 # q_global <- quantile(all_vals, c(0.025, 0.975), na.rm = TRUE)
 q_global <- c(-0.25,0.25)
-
-# ============================================================
-# 7️⃣ Plot loop
-# ============================================================
+# 7. Plot loop
 for(i in 2:52){
   
   trend_sf$val <- trend_sf[[i]]
@@ -157,11 +128,7 @@ for(i in 2:52){
          height=10,
          dpi=150)
 }
-
-# ============================================================
-# 8️⃣ Create GIF
-# ============================================================
-
+# 8. Create GIF
 png_files <- list.files(pattern="plot_\\d+\\.png$")
 png_files <- png_files[order(as.numeric(gsub("\\D","",png_files)))]
 
@@ -259,7 +226,7 @@ p2 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=q_global,          # 🔥 用quantile
+    limits=q_global,          # Use quantile limits
     oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
@@ -305,7 +272,7 @@ p1 <- ggplot() +
     mid="white",
     high="blue",
     midpoint=0,
-    limits=q_global,          # 🔥 用quantile
+    limits=q_global,          # Use quantile limits
     oob=scales::squish,
     guide=guide_colorbar(barwidth=25, barheight=0.5)
   ) +
@@ -377,7 +344,7 @@ use_condaenv("CPD", required = TRUE)
 py_run_string("
 import numpy as np
 
-data = np.load('D:/77/research/temp/snow/trend_weekly_bym+cov.npz', allow_pickle=True)
+data = np.load('path/to/snow/data-and-results/trend_weekly_bym+cov.npz', allow_pickle=True)
 
 ini   = data['weekly_ini']
 final = data['weekly_final']
@@ -423,6 +390,3 @@ latex += \"\"\"\\hline
 
 print(latex)
 ")
-
-
-

@@ -10,10 +10,7 @@ from multiprocessing import Pool, current_process
 from sksparse.cholmod import cholesky
 from polyagamma import random_polyagamma
 import os
-
-# ============================================================
-# CONFIG
-# ============================================================
+# Paths and settings
 DIST_TH = 0.22
 period = 52
 
@@ -26,8 +23,9 @@ prior_prec = 1.0 / 25.0
 N_CHAINS = 10
 SEED_BASE = 1234
 
-BASE_DIR = Path(r"D:\77\Research\temp\snow")
-OUTPUT_DIR = Path(r"E:\snow_results\holdout_38_14")
+# Set these paths for the local system.
+BASE_DIR = Path("path/to/snow/data")
+OUTPUT_DIR = Path("path/to/snow/results") / "holdout_38_14"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 N_TRAIN_YEARS = 38
@@ -35,11 +33,8 @@ N_TEST_YEARS = 14
 TRAIN_WEEKS = N_TRAIN_YEARS * period
 TEST_WEEKS = N_TEST_YEARS * period
 PRED_THIN = 15
-
-# ============================================================
-# 1️⃣ Load data
-# ============================================================
-snow = pyreadr.read_r("snow_cleaned_full.Rda")
+# 1. Load data
+snow = pyreadr.read_r(BASE_DIR / "snow_cleaned_full.Rda")
 snow = list(snow.values())[0].reset_index(drop=True)
 
 coords_all = snow.iloc[:, :2].to_numpy()
@@ -49,21 +44,14 @@ assert y_full.shape[1] == (N_TRAIN_YEARS + N_TEST_YEARS) * period
 y_all = y_full[:, :TRAIN_WEEKS]
 
 S_full, TT = y_all.shape
-
-# ============================================================
-# 2️⃣ USE FULL DATA (no filtering)
-# ============================================================
-
+# Retain all cells
 coords = coords_all
 y = y_all
 S = S_full
 
 print("Using FULL data")
 print("S =", S)
-
-# ============================================================
-# 3️⃣ global trend
-# ============================================================
+# 3. global trend
 t_full = np.arange(1, TT + 1)
 t_trend_full = (t_full - t_full.mean()) / t_full.std(ddof=0)
 
@@ -73,10 +61,7 @@ def run_chain(args):
     chain_seed = SEED_BASE + chain_id
     np.random.seed(chain_seed)
     pg_rng = np.random.default_rng(chain_seed)
-
-    # --------------------------------------------------------
     # select events
-    # --------------------------------------------------------
     if event_name == "p01":
         loc_mask = (y[:, :-1] == 0)
         kappa_builder = lambda ny: ny - 0.5
@@ -108,10 +93,7 @@ def run_chain(args):
 
     K = covariates.shape[1]
     theta_dim = K * S
-
-    # --------------------------------------------------------
     # build X
-    # --------------------------------------------------------
     rows, cols, vals = [], [], []
 
     for i in range(N):
@@ -122,20 +104,14 @@ def run_chain(args):
             vals.append(covariates[i, k])
 
     X = coo_matrix((vals,(rows,cols)), shape=(N,theta_dim)).tocsr()
-
-    # --------------------------------------------------------
     # prior
-    # --------------------------------------------------------
     blocks = [
         [prior_prec * diags(np.ones(S)) if i == j else None
          for j in range(K)]
         for i in range(K)
     ]
     curr_prec = bmat(blocks, format="csr")
-
-    # --------------------------------------------------------
     # MCMC
-    # --------------------------------------------------------
     curr_theta = np.zeros(theta_dim)
     all_theta = np.zeros((theta_dim, tot_save))
     save_idx = 0

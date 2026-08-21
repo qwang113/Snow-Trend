@@ -5,7 +5,8 @@ library(sp)
 library(ggplot2)
 library(rnaturalearth)
 library(RColorBrewer)
-setwd("D:/77/Research/temp/snow/")
+# Set this path to the directory containing snow_all_groups.Rda.
+setwd("path/to/snow/data")
 snow_dat <- readRDS("snow_all_groups.Rda")
 snow_matrix <- as.matrix(snow_dat[,-(1:2)])
 snow_long <- snow_dat$LON

@@ -5,7 +5,7 @@ library(sp)
 library(ggplot2)
 library(rnaturalearth)
 library(RColorBrewer)
-snow_dat <- readRDS(here::here("snow_cleaned_full.Rda"))
+snow_dat <- readRDS(here::here("data", "snow_cleaned_full.Rda"))
 snow_matrix <- as.matrix(snow_dat[,-(1:2)])
 snow_long <- snow_dat$LON
 snow_lat <- snow_dat$LAT

@@ -1,8 +1,6 @@
-# ================================================================
-# WEEKLY BYM + FACTOR (Double PolyGamma)
+# Weekly BYM model with covariates
 # + NA vs Non-NA longitude (separate scaling)
-# FIXED VERSION (tau_indices alignment bug fixed)
-# ================================================================
+# Spatial model with aligned tau indices
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -21,8 +19,9 @@ from joblib import Parallel, delayed
 from pathlib import Path
 import multiprocessing
 
-BASE_DIR = Path(r"D:\77\Research\temp\snow")
-OUTPUT_DIR = Path(r"E:\snow_results\holdout_38_14")
+# Set these paths for the local system.
+BASE_DIR = Path("path/to/snow/data")
+OUTPUT_DIR = Path("path/to/snow/results") / "holdout_38_14"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 burn = 10000
@@ -40,10 +39,7 @@ PRED_THIN = 15
 
 CHAIN_START = 0
 CHAIN_END   = 10
-
-# ================================================================
-# LOAD DATA
-# ================================================================
+# Data
 def load_data():
     snow = pyreadr.read_r(BASE_DIR / "snow_cleaned_full.Rda")
     snow = list(snow.values())[0].reset_index(drop=True)
@@ -54,10 +50,7 @@ def load_data():
     y = y_full[:, :TRAIN_WEEKS]
 
     return coords, y
-
-# ================================================================
 # BUILD DATASET
-# ================================================================
 def build_dataset(event):
 
     coords, y = load_data()
@@ -110,10 +103,7 @@ def build_dataset(event):
 
     K_base = 4
     K_total = 8
-
-    # ============================================================
     # covariates
-    # ============================================================
     lat = (coords[:,1] - coords[:,1].mean()) / coords[:,1].std()
 
     lon_raw = coords[:,0]
@@ -163,10 +153,7 @@ def build_dataset(event):
     t_lat  = t_scaled * lat[row_idx]
     t_elev = t_scaled * elev[row_idx]
     t_temp = t_scaled * temp_scaled[row_idx, time_idx]
-
-    # ============================================================
     # X_eta
-    # ============================================================
     eta_dim = K_total*S + 5
 
     rows_e, cols_e, vals_e = [], [], []
@@ -227,10 +214,7 @@ def build_dataset(event):
     tau_indices = j*52 + w
 
     X_eta_base = coo.tocsr()
-
-    # ============================================================
     # X_tau
-    # ============================================================
     tau_dim = K_total * 52
 
     rows_t, cols_t, vals_t = [], [], []
@@ -266,10 +250,7 @@ def build_dataset(event):
         eta_dim, tau_dim, K_total, S,
         sp_mask, tau_indices
     )
-
-# ================================================================
 # MCMC
-# ================================================================
 def run_chain(chain_id, data, event):
 
     (
@@ -443,10 +424,7 @@ def predict_chain(chain_id):
 
     p_snow.flush()
     return chain_id
-
-# ================================================================
 # MAIN
-# ================================================================
 def main():
     for event in ["p01", "p10"]:
         print(f"\nBuilding dataset for {event} ...")

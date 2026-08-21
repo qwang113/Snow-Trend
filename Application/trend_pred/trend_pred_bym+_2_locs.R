@@ -6,20 +6,15 @@ library(dplyr)
 library(tidyr)
 library(patchwork)
 library(reticulate)
-
-# =====================================================
-# CONFIG
-# =====================================================
-BASE_DIR <- "D:/77/Research/temp/snow"
+# Paths and settings
+# Set this path to the local data and results directory.
+BASE_DIR <- "path/to/snow/data-and-results"
 setwd(BASE_DIR)
 
 period <- 52
 thin <- 15
 chains <- 0:9
-
-# =====================================================
-# LOAD DATA
-# =====================================================
+# Data
 snow <- readRDS("snow_cleaned_full.Rda")
 
 coords <- as.matrix(snow[,1:2])
@@ -29,14 +24,10 @@ S <- nrow(y)
 TT <- ncol(y)
 
 cat("Using S =", S, "\n")
-
-# =====================================================
 # COVARIATES
-# =====================================================
-
 lat <- scale(coords[,2])[,1]
 
-# ===== NEW: longitude split =====
+# ===== Longitude split =====
 lon_raw <- coords[,1]
 
 region <- rep(0, S)
@@ -80,10 +71,7 @@ temp <- scale(temp)
 t_scaled <- scale(1:TT)[,1]
 
 inv_logit <- function(x) 1/(1+exp(-x))
-
-# =====================================================
 # TARGET LOCATIONS
-# =====================================================
 target_points <- list(
   Novosibirsk = c(82.9204, 55.0302),
   Dandong     = c(124.3547, 40.0005),
@@ -103,16 +91,9 @@ nearest_indices <- sapply(target_points, function(loc){
 ids <- nearest_indices
 SS <- length(ids)
 names(ids) <- names(target_points)
-
-# =====================================================
 # NUMPY（npz）
-# =====================================================
 np <- import("numpy")
-
-# =====================================================
 # LOAD NPZ
-# =====================================================
-
 load_bym_cov <- function(prefix){
   
   eta_list <- list()
@@ -143,16 +124,10 @@ load_bym_cov <- function(prefix){
   
   list(eta=eta_list, tau=tau_list)
 }
-
-# =====================================================
-# LOAD POSTERIOR（已是longitude模型）
-# =====================================================
+# LOAD POSTERIOR (longitude model)
 bym01 <- load_bym_cov("p01_weekly_cov+lon")
 bym10 <- load_bym_cov("p10_weekly_cov+lon")
-
-# =====================================================
-# SIMULATION（核心）
-# =====================================================
+# SIMULATION (core calculation)
 compute_bym_cov <- function(eta01_list, tau01_list,
                             eta10_list, tau10_list){
   
@@ -237,18 +212,12 @@ compute_bym_cov <- function(eta01_list, tau01_list,
   close(pb)
   out
 }
-
-# =====================================================
 # RUN
-# =====================================================
 bym_cov_pred <- compute_bym_cov(
   bym01$eta, bym01$tau,
   bym10$eta, bym10$tau
 )
-
-# =====================================================
 # YEAR AGG
-# =====================================================
 agg_year <- function(arr){
   
   num_year <- dim(arr)[3] / 52
@@ -263,10 +232,7 @@ agg_year <- function(arr){
 }
 
 bym_cov_year <- agg_year(bym_cov_pred)
-
-# =====================================================
 # PLOT
-# =====================================================
 plot_model <- function(arr){
   
   plots <- list()
@@ -311,4 +277,3 @@ plot_model <- function(arr){
 
 p_cov <- plot_model(bym_cov_year)
 p_cov
-

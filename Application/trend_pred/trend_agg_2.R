@@ -6,15 +6,9 @@ library(rnaturalearth)
 library(cowplot)
 library(reticulate)
 library(knitr)
-
-# ------------------------------------------------------------
-# CONFIG
-# ------------------------------------------------------------
+# Paths and settings
 period <- 52
-
-# ------------------------------------------------------------
-# 1️⃣ Load FULL snow
-# ------------------------------------------------------------
+# 1. Load FULL snow
 snow_full <- readRDS("snow_cleaned.Rda")
 
 coords <- as.matrix(snow_full[, 1:2])
@@ -22,10 +16,7 @@ y <- as.matrix(snow_full[, -c(1, 2)])
 
 S <- nrow(coords)
 cat("FULL S =", S, "\n")
-
-# ------------------------------------------------------------
-# 2️⃣ Covariates (FULL, aligned with full-data fitting)
-# ------------------------------------------------------------
+# 2. Covariates (FULL, aligned with full-data fitting)
 no_nbs <- c(
   57, 170, 236, 269, 343, 685, 946, 947, 989,
   1037, 1084, 1090, 1109, 1118, 1127, 1176, 1203
@@ -46,14 +37,12 @@ elev_all[mask] <- elev_raw
 elev_all[no_nbs] <- nnbs_elev
 
 elev <- as.numeric(scale(elev_all))
-
-# ------------------------------------------------------------
-# 3️⃣ Load NPZ summaries (FULL DATA)
-# ------------------------------------------------------------
+# 3. NPZ summaries
 use_condaenv("CPD", required = TRUE)
 py_config()
 
-setwd("D:/77/Research/temp/snow")
+# Set this path to the local data and results directory.
+setwd("path/to/snow/data-and-results")
 np <- import("numpy", convert = FALSE)
 
 ind  <- np$load("trend_ind_summary.npz", allow_pickle = TRUE)
@@ -88,10 +77,7 @@ trend_BMP <- list(
 stopifnot(length(trend_INDEP$mean) == S)
 stopifnot(length(trend_BM$mean) == S)
 stopifnot(length(trend_BMP$mean) == S)
-
-# ------------------------------------------------------------
-# 4️⃣ Map prep
-# ------------------------------------------------------------
+# 4. Map prep
 aeqd_proj <- "+proj=aeqd +lat_0=90 +lon_0=-100"
 
 make_sf <- function(mean, sd) {
@@ -117,10 +103,7 @@ sf_BMP   <- make_sf(trend_BMP$mean, trend_BMP$sd)
 world <- ne_countries(scale = "medium", returnclass = "sf")
 world_north <- world[st_coordinates(st_centroid(world))[, 2] > 0, ]
 world_aeqd <- st_transform(world_north, crs = aeqd_proj)
-
-# ------------------------------------------------------------
-# 5️⃣ Mean map
-# ------------------------------------------------------------
+# 5. Mean map
 rg_mean <- range(
   trend_INDEP$mean,
   trend_BM$mean,
@@ -156,10 +139,7 @@ p2 <- plot_mean(sf_BM, "Annual Trend - Weekly BYM")
 p3 <- plot_mean(sf_BMP, "Annual Trend - BYM+")
 
 cowplot::plot_grid(p1, p2, p3, nrow = 1)
-
-# ------------------------------------------------------------
-# 6️⃣ SD map
-# ------------------------------------------------------------
+# 6. SD map
 rg_sd <- range(
   log(trend_INDEP$sd),
   log(trend_BM$sd),
@@ -194,10 +174,7 @@ p6 <- plot_sd(sf_BMP, "Annual Trend log(SD) - BYM+")
 
 cowplot::plot_grid(p4, p5, p6, nrow = 1)
 cowplot::plot_grid(p3, p6, nrow = 1)
-
-# ------------------------------------------------------------
-# 7️⃣ Table
-# ------------------------------------------------------------
+# 7. Table
 make_table_row <- function(trend) {
   inc_total <- sum(trend$mean > 0)
   dec_total <- sum(trend$mean < 0)
@@ -230,10 +207,7 @@ kable(
   align = "c",
   col.names = colnames(tb)
 )
-
-# ------------------------------------------------------------
-# 8️⃣ Regression
-# ------------------------------------------------------------
+# 8. Regression
 M1 <- lm(trend_BM$mean ~ lats + elev)
 knitr::kable(summary(M1)$coefficients, format = "latex", digits = 5)
 
@@ -258,11 +232,7 @@ p_lat_bymp <- ggplot(df_scatter, aes(x = lat, y = trend_bymp)) +
   theme(plot.title = element_text(hjust = 0.5))
 
 p_lat_bymp
-
-# ------------------------------------------------------------
 # Scatter: Trend vs Elevation
-# ------------------------------------------------------------
-
 df_scatter$elev <- elev
 df_scatter$elev_raw <- scale(elev_all)
 
@@ -333,12 +303,7 @@ p_temp <- ggplot(df_temp, aes(x = alpha, y = trend)) +
   theme(plot.title = element_text(hjust = 0.5))
 
 p_temp
-
-
-# ------------------------------------------------------------
 # Scatter: Trend vs Longitude
-# ------------------------------------------------------------
-
 lons <- as.numeric(scale(coords[, 1]))
 
 df_scatter$lon <- lons

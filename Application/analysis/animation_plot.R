@@ -17,7 +17,8 @@ coords <- rbind(all_y, all_y_nnbs)[,1:2]
 
 
 # First year
-setwd("D:/77/Research/temp/snow")
+# Set this path to the directory containing prediction files.
+setwd("path/to/snow/results")
 load("predict_ind.Rda")
 
 weekly_ini_INDEP <- weekly_ini
@@ -260,7 +261,8 @@ for (i in 2:52) {
   )
 }
 
-setwd("D:/77/Research/temp/snow")
+# Set this path to the directory containing prediction files.
+setwd("path/to/snow/results")
 png_files <- list.files(pattern = "plot_\\d+\\.png$") 
 png_files <- png_files[order(as.numeric(gsub("\\D", "", png_files)))]# Find all saved PNGs
 gif <- image_read(png_files)                       # Read images
@@ -344,9 +346,3 @@ ggplot() +
   guides(
     color = guide_legend(override.aes = list(size = 4))
   )
-
-
-
-
-
-
